@@ -1,0 +1,7 @@
+   [build]
+     command   = "npm run build"   # Netlify 将执行的构建命令
+     publish   = ".next"           # 插件会自动处理，无需改动
+     environment = { NODE_VERSION = "18" }  # 根据你本地 Node 版本填写
+
+   [[plugins]]
+     package = "@netlify/plugin-nextjs"
