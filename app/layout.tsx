@@ -1,0 +1,11 @@
+import './globals.css';
+import { ReactNode } from 'react';
+import 'leaflet/dist/leaflet.css';
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="zh-CN">
+      <body style={{ margin: 0 }}>{children}</body>
+    </html>
+  );
+} 
