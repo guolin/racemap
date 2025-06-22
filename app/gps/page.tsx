@@ -77,34 +77,50 @@ export default function GpsDebugPage() {
       return;
     }
 
-    geoWatchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude, speed, heading } = pos.coords as GeolocationCoordinates & { heading: number };
-        const ts = Date.now();
-        const finalHeading = heading != null && !Number.isNaN(heading) ? heading : deviceHeading;
-        const entry: LogEntry = {
-          timestamp: ts,
-          lat: latitude,
-          lng: longitude,
-          speedKts: speed != null && !Number.isNaN(speed) ? msToKts(speed) : null,
-          headingDeg: finalHeading != null && !Number.isNaN(finalHeading) ? finalHeading : null,
-          sourceHeading: heading != null && !Number.isNaN(heading) ? 'gps' : 'device',
-        };
+    const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 } as PositionOptions;
 
-        // 使用函数式更新，保持最多 200 条
-        setLogs((prev) => {
-          const next = [...prev, entry];
-          return next.length > 200 ? next.slice(next.length - 200) : next;
-        });
-      },
-      (err) => {
-        console.error('[GPS] error', err);
-        const msg = `[${err.code}] ${err.message}`;
-        setErrorMsg(msg);
-        setErrorLogs((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 }
-    );
+    const startWatch = () => {
+      geoWatchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, speed, heading } = pos.coords as GeolocationCoordinates & { heading: number };
+          const ts = Date.now();
+          const finalHeading = heading != null && !Number.isNaN(heading) ? heading : deviceHeading;
+          const entry: LogEntry = {
+            timestamp: ts,
+            lat: latitude,
+            lng: longitude,
+            speedKts: speed != null && !Number.isNaN(speed) ? msToKts(speed) : null,
+            headingDeg: finalHeading != null && !Number.isNaN(finalHeading) ? finalHeading : null,
+            sourceHeading: heading != null && !Number.isNaN(heading) ? 'gps' : 'device',
+          };
+
+          // 使用函数式更新，保持最多 200 条
+          setLogs((prev) => {
+            const next = [...prev, entry];
+            return next.length > 200 ? next.slice(next.length - 200) : next;
+          });
+        },
+        (err) => {
+          console.error('[GPS] error', err);
+          const msg = `[watch][${err.code}] ${err.message}`;
+          setErrorMsg(msg);
+          setErrorLogs((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
+
+          // TIMEOUT 自动重试
+          if (err.code === 3 && tracking) {
+            if (geoWatchIdRef.current != null) {
+              navigator.geolocation.clearWatch(geoWatchIdRef.current as number);
+              geoWatchIdRef.current = null;
+            }
+            // 立即重启 watch
+            startWatch();
+          }
+        },
+        options
+      );
+    };
+
+    startWatch();
 
     return () => {
       if (geoWatchIdRef.current != null) {
@@ -126,6 +142,39 @@ export default function GpsDebugPage() {
     document.addEventListener('click', requestOrientPermission);
     return () => document.removeEventListener('click', requestOrientPermission);
   }, []);
+
+  // 单次获取当前位置
+  const fetchOnce = () => {
+    if (!navigator.geolocation) {
+      const msg = '浏览器不支持 Geolocation';
+      setErrorMsg(msg);
+      setErrorLogs((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, speed, heading } = pos.coords as GeolocationCoordinates & { heading: number };
+        const ts = Date.now();
+        const finalHeading = heading != null && !Number.isNaN(heading) ? heading : deviceHeading;
+        const entry: LogEntry = {
+          timestamp: ts,
+          lat: latitude,
+          lng: longitude,
+          speedKts: speed != null && !Number.isNaN(speed) ? msToKts(speed) : null,
+          headingDeg: finalHeading != null && !Number.isNaN(finalHeading) ? finalHeading : null,
+          sourceHeading: heading != null && !Number.isNaN(heading) ? 'gps' : 'device',
+        };
+        setLogs((prev) => [...prev, entry]);
+      },
+      (err) => {
+        const msg = `[单次][${err.code}] ${err.message}`;
+        setErrorMsg(msg);
+        setErrorLogs((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
 
   return (
     <div style={{ padding: 16 }}>
@@ -149,6 +198,23 @@ export default function GpsDebugPage() {
         }}
       >
         {tracking ? '停止定位' : '开始定位'}
+      </button>
+
+      {/* 单次重新获取按钮 */}
+      <button
+        onClick={fetchOnce}
+        style={{
+          padding: '8px 16px',
+          marginBottom: 12,
+          marginLeft: 12,
+          border: 'none',
+          borderRadius: 8,
+          background: '#0078ff',
+          color: '#fff',
+          cursor: 'pointer',
+        }}
+      >
+        重新获取
       </button>
 
       {/* 当前最新数据 */}
