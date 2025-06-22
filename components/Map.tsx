@@ -68,6 +68,11 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const [gpsOk, setGpsOk] = useState<boolean>(false);
   const lastGpsTsRef = useRef<number>(0);
 
+  // ---- GPS 详情 & 调试日志 ----
+  const [gpsDetail, setGpsDetail] = useState<GeolocationPosition | null>(null);
+  const [showGpsDetail, setShowGpsDetail] = useState(false);
+  const [gpsLogs, setGpsLogs] = useState<string[]>([]);
+
   // 根据经纬度、方位角和距离计算目标点（复用）
   const destinationPoint = (
     lat: number,
@@ -324,6 +329,17 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                 }
                 setGpsOk(true);
                 lastGpsTsRef.current = Date.now();
+
+                // 保存 GPS 详情
+                setGpsDetail(pos);
+
+                // 追加调试日志（最多保留 20 条）
+                const logLine =
+                  new Date().toLocaleTimeString() +
+                  ` lat:${latitude.toFixed(6)} lng:${longitude.toFixed(6)}` +
+                  ` spd:${speed != null && !Number.isNaN(speed) ? (speed * 1.94384).toFixed(1) : '--'}kt` +
+                  ` hdg:${gpsHeading != null && !Number.isNaN(gpsHeading) ? gpsHeading.toFixed(0) : '--'}°`;
+                setGpsLogs((prev) => [...prev.slice(-19), logLine]);
               }
 
               // 管理员发布位置
@@ -564,7 +580,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
             zIndex: 1100,
             minWidth: 100,
             lineHeight: 1.2,
+            cursor: 'pointer',
           }}
+          onClick={() => setShowGpsDetail((v) => !v)}
         >
           <div style={{ fontSize: 22, fontWeight: 'bold' }}>
             {gpsSpeedKts != null ? gpsSpeedKts.toFixed(1) : '--'}<span style={{ fontSize: 14 }}> kt</span>
@@ -584,6 +602,33 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               background: gpsOk ? '#28a745' : '#dc3545',
             }}
           />
+
+          {/* GPS 详情 Tooltip */}
+          {showGpsDetail && gpsDetail && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translate(-50%, 8px)',
+                background: 'rgba(0,0,0,0.85)',
+                color: '#0f0',
+                padding: '8px 12px',
+                borderRadius: 8,
+                fontSize: 12,
+                whiteSpace: 'nowrap',
+                zIndex: 1300,
+                lineHeight: 1.4,
+              }}
+            >
+              <div>LAT: {gpsDetail.coords.latitude.toFixed(6)}</div>
+              <div>LNG: {gpsDetail.coords.longitude.toFixed(6)}</div>
+              <div>ACC: {gpsDetail.coords.accuracy} m</div>
+              <div>HDG: {gpsDetail.coords.heading != null && !Number.isNaN(gpsDetail.coords.heading as any) ? gpsDetail.coords.heading!.toFixed(1) + '°' : '--'}</div>
+              <div>SPD: {gpsDetail.coords.speed != null && !Number.isNaN(gpsDetail.coords.speed as any) ? (gpsDetail.coords.speed! * 1.94384).toFixed(1) + ' kt' : '--'}</div>
+              <div>TS: {new Date(gpsDetail.timestamp).toLocaleTimeString()}</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -678,6 +723,31 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
         <InfoCard title="COURSE AXIS" value={`${courseAxis || '--'}°M`} />
         <InfoCard title="COURSE SIZE" value={`${courseSizeNm || '--'}NM`} />
       </div>
+
+      {/* GPS 调试日志 */}
+      {!isAdmin && gpsLogs.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 120,
+            left: 8,
+            right: 8,
+            maxHeight: 200,
+            overflowY: 'auto',
+            background: 'rgba(0,0,0,0.6)',
+            color: '#0f0',
+            fontFamily: 'monospace',
+            fontSize: 12,
+            padding: 8,
+            borderRadius: 4,
+            zIndex: 1500,
+          }}
+        >
+          {gpsLogs.map((l, idx) => (
+            <div key={idx}>{l}</div>
+          ))}
+        </div>
+      )}
 
       {/* 设置对话框 */}
       {isAdmin && settingsVisible && (
