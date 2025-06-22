@@ -306,16 +306,21 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               if (!isAdmin) {
                 const dir = gpsHeading != null && !Number.isNaN(gpsHeading) ? gpsHeading : heading;
                 console.debug('[OBS] my boat dir:', dir);
+                const DIR_THRESHOLD = 2; // deg
                 if (!myMarkerRef.current && mapRef.current) {
                   console.debug('[OBS] creating myMarker');
                   myMarkerRef.current = L.marker(latlng, {
                     icon: createHeadingIcon(dir),
                     zIndexOffset: 500,
                   }).addTo(mapRef.current);
+                  lastHdgRef.current = dir; // reuse heading ref to记录图标角度
                 } else if (myMarkerRef.current) {
-                  console.debug('[OBS] updating myMarker position/icon');
+                  // 只更新位置；方向变化显著时再换图标，减少闪烁
                   myMarkerRef.current.setLatLng(latlng);
-                  myMarkerRef.current.setIcon(createHeadingIcon(dir));
+                  if (Math.abs(dir - lastHdgRef.current) > DIR_THRESHOLD) {
+                    myMarkerRef.current.setIcon(createHeadingIcon(dir));
+                    lastHdgRef.current = dir;
+                  }
                 }
 
                 // 更新 GPS 信息面板（速度 & 方向）
@@ -624,10 +629,69 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       >
         <button
           style={toolBtnStyle}
-          title="定位到当前位置"
+          title="定位到当前位置 (手动获取)"
           onClick={() => {
-            if (mapRef.current && myPosRef.current) {
-              mapRef.current.setView(myPosRef.current, 15);
+            // 手动触发一次 geolocation 获取，兼容息屏后 watch 被暂停的情况
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  console.debug('[GPS] manual fetch', pos.coords);
+                  const { latitude, longitude, heading: gpsHeading } = pos.coords as GeolocationCoordinates & { heading: number };
+                  const latlng = L.latLng(latitude, longitude);
+
+                  // 地图定位
+                  if (mapRef.current) {
+                    mapRef.current.setView(latlng, 15);
+                  }
+
+                  // 更新观察者自己的标记
+                  if (!isAdmin) {
+                    const dir = gpsHeading != null && !Number.isNaN(gpsHeading) ? gpsHeading : heading;
+                    if (!myMarkerRef.current && mapRef.current) {
+                      myMarkerRef.current = L.marker(latlng, {
+                        icon: createHeadingIcon(dir),
+                        zIndexOffset: 500,
+                      }).addTo(mapRef.current);
+                    } else if (myMarkerRef.current) {
+                      myMarkerRef.current.setLatLng(latlng);
+                    }
+
+                    // 更新 GPS 状态指示
+                    setGpsOk(true);
+                    lastGpsTsRef.current = Date.now();
+                    setLastGpsInfo({ lat: latlng.lat, lng: latlng.lng, ts: Date.now() });
+                  }
+
+                  // 管理员：同步船位并立即发布
+                  if (isAdmin) {
+                    lastPosRef.current = latlng;
+                    boatMarkerRef.current?.setLatLng(latlng);
+                    if (!routeLineRef.current) drawCourse(latlng);
+
+                    if (mqttRef.current?.connected) {
+                      const payload = {
+                        id: 'ADMIN',
+                        lat: latlng.lat,
+                        lng: latlng.lng,
+                        course: {
+                          axis: Number(courseAxis),
+                          distance_nm: Number(courseSizeNm),
+                          start_line_m: Number(startLineLenM),
+                        },
+                        timestamp: Date.now(),
+                      };
+                      console.debug('[MQTT] manual publish', posTopic(courseId), payload);
+                      mqttRef.current.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
+                      lastPublishRef.current = Date.now();
+                    }
+                  }
+                },
+                (err) => {
+                  console.error('[GPS] manual geo error', err);
+                  setErrorMsg('无法获取定位权限');
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
+              );
             }
           }}
         >
