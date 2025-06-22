@@ -102,6 +102,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       const distNm = Number(courseSizeNm) || 0;
       const startLen = Number(startLineLenM) || 0;
 
+      console.debug('[DRAW] axis', axisNum, 'distNm', distNm, 'startLen', startLen);
+
       const startMark = destinationPoint(
         origin.lat,
         origin.lng,
@@ -309,9 +311,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                     lat: latlng.lat,
                     lng: latlng.lng,
                     course: {
-                      axis: courseAxis,
-                      distance_nm: courseSizeNm,
-                      start_line_m: startLineLenM,
+                      axis: Number(courseAxis),
+                      distance_nm: Number(courseSizeNm),
+                      start_line_m: Number(startLineLenM),
                     },
                     timestamp: Date.now(),
                   };
@@ -332,9 +334,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                       lat: p.lat,
                       lng: p.lng,
                       course: {
-                        axis: courseAxis,
-                        distance_nm: courseSizeNm,
-                        start_line_m: startLineLenM,
+                        axis: Number(courseAxis),
+                        distance_nm: Number(courseSizeNm),
+                        start_line_m: Number(startLineLenM),
                       },
                       timestamp: Date.now(),
                     };
@@ -343,6 +345,11 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                     lastPublishRef.current = Date.now();
                   }, 15000);
                 }
+              }
+
+              // 若已有定位，则立即基于接收到的参数重绘
+              if (lastPosRef.current) {
+                drawCourse(lastPosRef.current);
               }
             },
             (err) => {
@@ -384,11 +391,21 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               mapRef.current?.setView(pos, 15);
             }
             if (data.course) {
+              console.debug('[MQTT] received course', data.course);
               const { axis, distance_nm, start_line_m } = data.course;
-              if (typeof axis === 'number') setCourseAxis(String(axis));
-              if (typeof distance_nm === 'number') setCourseSizeNm(String(distance_nm));
-              if (typeof start_line_m === 'number') setStartLineLenM(String(start_line_m));
-              if (lastPosRef.current) drawCourse(lastPosRef.current);
+
+              const axisStr = Number(axis).toString();
+              const distStr = Number(distance_nm).toString();
+              const startStr = Number(start_line_m).toString();
+
+              if (!Number.isNaN(Number(axisStr))) setCourseAxis(axisStr);
+              if (!Number.isNaN(Number(distStr))) setCourseSizeNm(distStr);
+              if (!Number.isNaN(Number(startStr))) setStartLineLenM(startStr);
+
+              // 若已有定位，则立即基于接收到的参数重绘
+              if (lastPosRef.current) {
+                drawCourse(lastPosRef.current);
+              }
             }
           } catch (e) {
             console.warn('Invalid MQTT payload', e);
@@ -451,6 +468,13 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     el.style.transition = 'transform 0.4s';
     el.style.transform = `rotate(${mapRotationDeg}deg)`;
   }, [mapRotationDeg]);
+
+  // 当航线参数变动时重新绘制航线
+  useEffect(() => {
+    if (lastPosRef.current) {
+      drawCourse(lastPosRef.current);
+    }
+  }, [courseAxis, courseSizeNm, startLineLenM]);
 
   return (
     <div style={{ position: 'relative', height: '100vh', width: '100vw' }}>
