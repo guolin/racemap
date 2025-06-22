@@ -1,13 +1,17 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getMyRaceId } from '../utils/race';
 
 export default function Home() {
   const router = useRouter();
 
   const [code, setCode] = useState('');
-  const myId = typeof window !== 'undefined' ? getMyRaceId() : '';
+  const [myId, setMyId] = useState('');
+
+  useEffect(() => {
+    setMyId(getMyRaceId());
+  }, []);
 
   const btnStyle: React.CSSProperties = {
     width: '260px',
@@ -66,8 +70,9 @@ export default function Home() {
         <button
           style={{ ...btnStyle, width: '100%', background: '#ff7f0e', color: '#fff' }}
           onClick={() => myId && router.push(`/race/${myId}`)}
+          disabled={!myId}
         >
-          进入我的比赛（{myId}）
+          {myId ? `进入我的比赛（${myId}）` : '进入我的比赛'}
         </button>
       </div>
     </main>

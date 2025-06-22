@@ -32,13 +32,25 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     const publishIntervalRef = useRef<any>(null);
     const lastPublishRef = useRef<number>(0);
     const myMarkerRef = useRef<L.Marker | null>(null);
+    // 方向防抖记录
+    const lastHdgRef = useRef<number>(0);
+    const lastUpdateRef = useRef<number>(0);
 
   // 设备方向
   const [heading, setHeading] = useState<number>(0);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [courseAxis, setCourseAxis] = useState<number>(WIND_DIRECTION);
-  const [courseSizeNm, setCourseSizeNm] = useState<number>(COURSE_DISTANCE_NM);
-  const [startLineLenM, setStartLineLenM] = useState<number>(START_LINE_LENGTH_M);
+
+  // ---- 本地持久化: 默认值读取 ----
+  const getStored = (key: string, def: number): number => {
+    if (typeof window === 'undefined') return def;
+    const v = localStorage.getItem(key);
+    const n = v !== null ? Number(v) : NaN;
+    return Number.isNaN(n) ? def : n;
+  };
+
+  const [courseAxis, setCourseAxis] = useState<string>(() => String(getStored('courseAxis', WIND_DIRECTION)));
+  const [courseSizeNm, setCourseSizeNm] = useState<string>(() => String(getStored('courseSizeNm', COURSE_DISTANCE_NM)));
+  const [startLineLenM, setStartLineLenM] = useState<string>(() => String(getStored('startLineLenM', START_LINE_LENGTH_M)));
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // 根据经纬度、方位角和距离计算目标点（复用）
@@ -83,11 +95,15 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
 
       const group = L.featureGroup();
 
+      const axisNum = Number(courseAxis) || 0;
+      const distNm = Number(courseSizeNm) || 0;
+      const startLen = Number(startLineLenM) || 0;
+
       const startMark = destinationPoint(
         origin.lat,
         origin.lng,
-        (courseAxis + 270) % 360,
-        startLineLenM
+        (axisNum + 270) % 360,
+        startLen
       );
 
       const midLat = (origin.lat + startMark[0]) / 2;
@@ -96,8 +112,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       const mark1 = destinationPoint(
         midLat,
         midLng,
-        courseAxis,
-        courseSizeNm * 1852
+        axisNum,
+        distNm * 1852
       );
 
       const startLine = L.polyline([origin, startMark], {
@@ -192,12 +208,17 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       map.on('locationfound', handleLocation);
     }
 
-    // 设备方向事件
+    // 方向事件处理（带防抖）
     const orientationHandler = (ev: DeviceOrientationEvent) => {
-      // 部分浏览器使用 webkitCompassHeading
-      const hdg = (ev as any).webkitCompassHeading != null ? (ev as any).webkitCompassHeading : 360 - (ev.alpha || 0);
-      if (!Number.isNaN(hdg)) {
-        setHeading(hdg);
+      const raw = (ev as any).webkitCompassHeading != null ? (ev as any).webkitCompassHeading : 360 - (ev.alpha || 0);
+      if (Number.isNaN(raw)) return;
+
+      const now = Date.now();
+      // 仅当角度变化超过 2° 且距离上次更新时间 >120ms 时才更新，减少抖动
+      if (Math.abs(raw - lastHdgRef.current) > 2 && now - lastUpdateRef.current > 120) {
+        lastHdgRef.current = raw;
+        lastUpdateRef.current = now;
+        setHeading(raw);
       }
     };
     window.addEventListener('deviceorientationabsolute', orientationHandler, true);
@@ -361,9 +382,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
             }
             if (data.course) {
               const { axis, distance_nm, start_line_m } = data.course;
-              if (typeof axis === 'number') setCourseAxis(axis);
-              if (typeof distance_nm === 'number') setCourseSizeNm(distance_nm);
-              if (typeof start_line_m === 'number') setStartLineLenM(start_line_m);
+              if (typeof axis === 'number') setCourseAxis(String(axis));
+              if (typeof distance_nm === 'number') setCourseSizeNm(String(distance_nm));
+              if (typeof start_line_m === 'number') setStartLineLenM(String(start_line_m));
               if (lastPosRef.current) drawCourse(lastPosRef.current);
             }
           } catch (e) {
@@ -407,6 +428,18 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     return () => document.removeEventListener('click', requestOrientPermission);
   }, []);
 
+  // ---- 本地持久化: 监听更新 ----
+  useEffect(() => {
+    if (!isAdmin) return;
+    try {
+      localStorage.setItem('courseAxis', String(courseAxis));
+      localStorage.setItem('courseSizeNm', String(courseSizeNm));
+      localStorage.setItem('startLineLenM', String(startLineLenM));
+    } catch (e) {
+      console.warn('[Map] Failed to persist course settings', e);
+    }
+  }, [isAdmin, courseAxis, courseSizeNm, startLineLenM]);
+
   return (
     <div style={{ position: 'relative', height: '100vh', width: '100vw' }}>
       {/* 实际地图容器 */}
@@ -442,7 +475,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       </div>
 
       {/* 数字指南针显示 */}
-      {Number.isFinite(heading) && (
+      {!isAdmin && Number.isFinite(heading) && (
         <div
           style={{
             position: 'absolute',
@@ -517,7 +550,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       >
         <div
           style={{
-            transform: `rotate(${-heading}deg)`,
+            transform: `rotate(0deg)`,
             transition: 'transform 0.3s',
             fontSize: 24,
           }}
@@ -546,8 +579,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           zIndex: 1000,
         }}
       >
-        <InfoCard title="COURSE AXIS" value={`${courseAxis}°M`} />
-        <InfoCard title="COURSE SIZE" value={`${courseSizeNm}NM`} />
+        <InfoCard title="COURSE AXIS" value={`${courseAxis || '--'}°M`} />
+        <InfoCard title="COURSE SIZE" value={`${courseSizeNm || '--'}NM`} />
       </div>
 
       {/* 设置对话框 */}
@@ -592,7 +625,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               <input
                 type="number"
                 value={courseAxis}
-                onChange={(e) => setCourseAxis(Number(e.target.value))}
+                onChange={(e) => setCourseAxis(e.target.value)}
                 style={{
                   width: '100%',
                   padding: 12,
@@ -609,7 +642,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                 type="number"
                 value={courseSizeNm}
                 step="0.1"
-                onChange={(e) => setCourseSizeNm(Number(e.target.value))}
+                onChange={(e) => setCourseSizeNm(e.target.value)}
                 style={{
                   width: '100%',
                   padding: 12,
@@ -625,7 +658,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               <input
                 type="number"
                 value={startLineLenM}
-                onChange={(e) => setStartLineLenM(Number(e.target.value))}
+                onChange={(e) => setStartLineLenM(e.target.value)}
                 style={{
                   width: '100%',
                   padding: 12,
@@ -662,9 +695,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                       lat: p.lat,
                       lng: p.lng,
                       course: {
-                        axis: courseAxis,
-                        distance_nm: courseSizeNm,
-                        start_line_m: startLineLenM,
+                        axis: Number(courseAxis),
+                        distance_nm: Number(courseSizeNm),
+                        start_line_m: Number(startLineLenM),
                       },
                       timestamp: Date.now(),
                     };
