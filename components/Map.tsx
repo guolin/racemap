@@ -529,9 +529,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
         )}
       </div>
 
-      {/* 指南针按钮 */}
+      {/* 指北指示按钮（与设备方向无关） */}
       <button
-        onClick={() => setHeading(0)}
         style={{
           position: 'absolute',
           top: 68,
@@ -550,7 +549,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       >
         <div
           style={{
-            transform: `rotate(0deg)`,
+            transform: 'rotate(0deg)',
             transition: 'transform 0.3s',
             fontSize: 24,
           }}
@@ -560,7 +559,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
             {/* 外圈 */}
             <circle cx="50" cy="50" r="45" stroke="#333" strokeWidth="6" fill="#fff" />
             {/* 指针分组 */}
-            <g transform={`rotate(${-heading} 50 50)`}>
+            <g>
               <polygon points="50,18 60,55 50,46 40,55" fill="#ff4500" stroke="#333" strokeWidth="2" />
             </g>
           </svg>
