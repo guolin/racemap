@@ -21,6 +21,7 @@ export default function GpsDebugPage() {
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
   // 错误信息
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorLogs, setErrorLogs] = useState<string[]>([]);
 
   // 防抖相关引用
   const lastHdgRef = useRef<number>(0);
@@ -28,6 +29,21 @@ export default function GpsDebugPage() {
 
   // 记录 geolocation watch id
   const geoWatchIdRef = useRef<number | null>(null);
+
+  // 是否正在追踪
+  const [tracking, setTracking] = useState<boolean>(false);
+
+  // 用户点击后启动追踪
+  const handleToggleTracking = () => {
+    if (!tracking) {
+      // 针对 iOS 主动请求方向权限
+      const d = window.DeviceOrientationEvent as any;
+      if (d && typeof d.requestPermission === 'function') {
+        d.requestPermission().catch(() => {/* ignore */});
+      }
+    }
+    setTracking((prev) => !prev);
+  };
 
   useEffect(() => {
     // 方向事件处理，与 Map 组件一致
@@ -54,7 +70,8 @@ export default function GpsDebugPage() {
   }, []);
 
   useEffect(() => {
-    // 建立地理定位 watch
+    if (!tracking) return; // 未开始追踪，不执行
+
     if (!navigator.geolocation) {
       setErrorMsg('浏览器不支持 Geolocation');
       return;
@@ -82,7 +99,9 @@ export default function GpsDebugPage() {
       },
       (err) => {
         console.error('[GPS] error', err);
-        setErrorMsg('无法获取定位权限');
+        const msg = `[${err.code}] ${err.message}`;
+        setErrorMsg(msg);
+        setErrorLogs((prev) => [...prev, `${new Date().toLocaleTimeString()} ${msg}`]);
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 }
     );
@@ -93,7 +112,7 @@ export default function GpsDebugPage() {
         geoWatchIdRef.current = null;
       }
     };
-  }, [deviceHeading]);
+  }, [deviceHeading, tracking]);
 
   // iOS 方向权限请求 (点击触发)
   useEffect(() => {
@@ -115,6 +134,22 @@ export default function GpsDebugPage() {
       {errorMsg && (
         <div style={{ color: '#c00', marginBottom: 12 }}>{errorMsg}</div>
       )}
+
+      {/* 开始/停止按钮 */}
+      <button
+        onClick={handleToggleTracking}
+        style={{
+          padding: '8px 16px',
+          marginBottom: 12,
+          border: 'none',
+          borderRadius: 8,
+          background: tracking ? '#dc3545' : '#28a745',
+          color: '#fff',
+          cursor: 'pointer',
+        }}
+      >
+        {tracking ? '停止定位' : '开始定位'}
+      </button>
 
       {/* 当前最新数据 */}
       {logs.length > 0 && (() => {
@@ -151,6 +186,26 @@ export default function GpsDebugPage() {
           </div>
         ))}
       </div>
+
+      {/* 错误列表 */}
+      {errorLogs.length > 0 && (
+        <div
+          style={{
+            maxHeight: 200,
+            overflowY: 'auto',
+            border: '1px solid #f99',
+            borderRadius: 4,
+            background: '#fff4f4',
+            padding: 8,
+            marginTop: 12,
+            fontSize: 12,
+          }}
+        >
+          {errorLogs.map((e, idx) => (
+            <div key={idx} style={{ color: '#c00' }}>{e}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 
