@@ -74,6 +74,13 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const myIconElRef = useRef<HTMLDivElement | null>(null);
   const myDirRef = useRef<number>(0);
 
+  // 在现有 hooks 定义后插入 headingRef，用于跨 effect 读取
+  const headingRef = useRef<number>(0);
+
+  // 👇 添加航迹方向相关引用
+  const lastGpsLatLngRef = useRef<L.LatLng | null>(null); // 保存上一条 GPS 坐标
+  const lastBearingRef = useRef<number>(0); // 最近一次有效 bearing (0~360)
+
   // 根据经纬度、方位角和距离计算目标点（复用）
   const destinationPoint = (
     lat: number,
@@ -245,6 +252,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
         lastHdgRef.current = raw;
         lastUpdateRef.current = now;
         setHeading(raw);
+        headingRef.current = raw;
       }
     };
     window.addEventListener('deviceorientationabsolute', orientationHandler, true);
@@ -300,14 +308,34 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                 boatMarkerRef.current?.setLatLng(latlng);
                 if (!routeLineRef.current) drawCourse(latlng);
 
-                if (!mapRef.current?.getBounds().contains(latlng)) {
-                  mapRef.current?.setView(latlng, 15);
+                // 若目标点超出当前视窗，再平移过去（保持现有缩放级别）
+                if (mapRef.current && !mapRef.current.getBounds().pad(-0.2).contains(latlng)) {
+                  mapRef.current.panTo(latlng);
                 }
+              }
+
+              // 计算航迹方向：优先使用浏览器提供的 heading，其次自行计算
+              let trackBearing: number | null = null;
+              if (gpsHeading != null && !Number.isNaN(gpsHeading)) {
+                trackBearing = gpsHeading;
+              } else if (lastGpsLatLngRef.current) {
+                // 手动计算：利用球面三角公式
+                const toRad = (d:number)=>d*Math.PI/180;
+                const toDeg = (r:number)=>r*180/Math.PI;
+                const φ1 = toRad(lastGpsLatLngRef.current.lat);
+                const φ2 = toRad(latitude);
+                const Δλ = toRad(longitude - lastGpsLatLngRef.current.lng);
+                const y = Math.sin(Δλ) * Math.cos(φ2);
+                const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+                trackBearing = (toDeg(Math.atan2(y, x)) + 360) % 360;
+              }
+              if (trackBearing != null && !Number.isNaN(trackBearing)) {
+                lastBearingRef.current = trackBearing;
               }
 
               // 显示观察者自身小船（带方向）
               if (!isAdmin) {
-                const dir = gpsHeading != null && !Number.isNaN(gpsHeading) ? gpsHeading : heading;
+                const dir = lastBearingRef.current;
                 console.debug('[OBS] my boat dir:', dir);
                 const DIR_THRESHOLD = 2; // deg
                 if (!myMarkerRef.current && mapRef.current) {
@@ -397,6 +425,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               if (lastPosRef.current) {
                 drawCourse(lastPosRef.current);
               }
+
+              // 在回调末尾维护 lastGpsLatLngRef
+              lastGpsLatLngRef.current = latlng;
             },
             (err) => {
               console.error('geo error', err);
@@ -435,7 +466,10 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               const pos = L.latLng(data.lat, data.lng);
               lastPosRef.current = pos;
               boatMarkerRef.current?.setLatLng(pos);
-              mapRef.current?.setView(pos, 15);
+              // 仅当管理员船位已离开视图边缘时再平移
+              if (mapRef.current && !mapRef.current.getBounds().pad(-0.2).contains(pos)) {
+                mapRef.current.panTo(pos);
+              }
             }
             if (data.course) {
               console.debug('[MQTT] received course', data.course);
@@ -480,7 +514,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           myMarkerRef.current = null;
         }
       };
-    }, [courseId, isAdmin, heading, courseAxis, courseSizeNm, startLineLenM]);
+    }, [courseId, isAdmin, courseAxis, courseSizeNm, startLineLenM]);
 
   // iOS 方向权限请求
   useEffect(() => {
@@ -648,9 +682,27 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                     mapRef.current.setView(latlng, 15);
                   }
 
+                  // 计算航迹方向同样逻辑
+                  let manualBearing: number | null = null;
+                  if (gpsHeading != null && !Number.isNaN(gpsHeading)) {
+                    manualBearing = gpsHeading;
+                  } else if (lastGpsLatLngRef.current) {
+                    const toRad = (d:number)=>d*Math.PI/180;
+                    const toDeg = (r:number)=>r*180/Math.PI;
+                    const φ1 = toRad(lastGpsLatLngRef.current.lat);
+                    const φ2 = toRad(latitude);
+                    const Δλ = toRad(longitude - lastGpsLatLngRef.current.lng);
+                    const y = Math.sin(Δλ) * Math.cos(φ2);
+                    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+                    manualBearing = (toDeg(Math.atan2(y, x)) + 360) % 360;
+                  }
+                  if (manualBearing != null && !Number.isNaN(manualBearing)) {
+                    lastBearingRef.current = manualBearing;
+                  }
+                  const dir = lastBearingRef.current;
+
                   // 更新观察者自己的标记
                   if (!isAdmin) {
-                    const dir = gpsHeading != null && !Number.isNaN(gpsHeading) ? gpsHeading : heading;
                     if (!myMarkerRef.current && mapRef.current) {
                       myMarkerRef.current = L.marker(latlng, {
                         icon: createHeadingIcon(dir),
@@ -695,6 +747,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                       lastPublishRef.current = Date.now();
                     }
                   }
+
+                  // 在 manual fetch 回调末尾更新 lastGpsLatLngRef
+                  lastGpsLatLngRef.current = latlng;
                 },
                 (err) => {
                   console.error('[GPS] manual geo error', err);
