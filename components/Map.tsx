@@ -20,6 +20,12 @@ const COURSE_DISTANCE_M = COURSE_DISTANCE_NM * 1852; // 海里转米
 const posTopic = (id: string) => `sailing/${id}/pos`;
 const routeTopic = (id: string) => `sailing/${id}/route`;
 
+// 动态引入 leaflet-rotate 以扩展 Map API（客户端环境）
+if (typeof window !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('leaflet-rotate');
+}
+
 const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   try {
     console.debug('[Map] component initialized, courseId:', courseId, 'isAdmin:', isAdmin);
@@ -40,8 +46,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const [heading, setHeading] = useState<number>(0);
   const [settingsVisible, setSettingsVisible] = useState(false);
 
-  // 地图旋转（0 = 北朝上；负 axis = 航线朝上）
-  const [mapRotationDeg, setMapRotationDeg] = useState<number>(0);
+  // 当前地图 Bearing，0 = 磁北朝上，负 axis = 航线朝上
+  const [mapBearing, setMapBearing] = useState<number>(0);
 
   // ---- 本地持久化: 默认值读取 ----
   const getStored = (key: string, def: number): number => {
@@ -171,8 +177,11 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   useEffect(() => {
     if (mapRef.current) return;
 
-    // 初始化地图, 默认指向北京，待获取定位后再更新
-    const map = L.map('map-root', { zoomControl: false }).setView([39.9042, 116.4074], 12);
+    // 启用 leaflet-rotate 插件（rotate: true）
+    const map = L.map('map-root', {
+      zoomControl: false,
+      rotate: true,
+    } as L.MapOptions & { rotate: boolean });
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
       {
@@ -228,6 +237,10 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     };
     window.addEventListener('deviceorientationabsolute', orientationHandler, true);
     window.addEventListener('deviceorientation', orientationHandler, true);
+
+    // 初始保持北朝上
+    (map as any).setBearing?.(0);
+    map.setView([39.9042, 116.4074], 12);
 
     return () => {
       map.off('locationfound', handleLocation);
@@ -460,14 +473,12 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     }
   }, [isAdmin, courseAxis, courseSizeNm, startLineLenM]);
 
-  // 应用旋转到地图容器
+  // 同步 state 到 map.setBearing（插件方法）
   useEffect(() => {
-    if (!mapRef.current) return;
-    const el = mapRef.current.getContainer();
-    el.style.transformOrigin = 'center center';
-    el.style.transition = 'transform 0.4s';
-    el.style.transform = `rotate(${mapRotationDeg}deg)`;
-  }, [mapRotationDeg]);
+    if (mapRef.current && typeof (mapRef.current as any).setBearing === 'function') {
+      (mapRef.current as any).setBearing(mapBearing, { animate: true });
+    }
+  }, [mapBearing]);
 
   // 当航线参数变动时重新绘制航线
   useEffect(() => {
@@ -583,8 +594,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           cursor: 'pointer',
         }}
         onClick={() => {
+          if (!mapRef.current) return;
           const axisNum = Number(courseAxis) || 0;
-          setMapRotationDeg((prev) => (prev === 0 ? -axisNum : 0));
+          setMapBearing((prev) => (Math.abs(prev) < 1e-2 ? -axisNum : 0));
         }}
       >
         <div
