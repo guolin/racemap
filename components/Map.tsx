@@ -32,15 +32,16 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const boatMarkerRef = useRef<L.Marker | null>(null);
   const routeLineRef = useRef<L.FeatureGroup | null>(null);
-  const lastPosRef = useRef<L.LatLng | null>(null); // 存储最新定位
-    const mqttRef = useRef<any>(null);
-    const geoWatchIdRef = useRef<number | null>(null);
-    const publishIntervalRef = useRef<any>(null);
-    const lastPublishRef = useRef<number>(0);
-    const myMarkerRef = useRef<L.Marker | null>(null);
-    // 方向防抖记录
-    const lastHdgRef = useRef<number>(0);
-    const lastUpdateRef = useRef<number>(0);
+  const lastPosRef = useRef<L.LatLng | null>(null); // 存储最新定位（信号船）
+  const myPosRef = useRef<L.LatLng | null>(null);  // 观察者自身位置
+  const mqttRef = useRef<any>(null);
+  const geoWatchIdRef = useRef<number | null>(null);
+  const publishIntervalRef = useRef<any>(null);
+  const lastPublishRef = useRef<number>(0);
+  const myMarkerRef = useRef<L.Marker | null>(null);
+  // 方向防抖记录
+  const lastHdgRef = useRef<number>(0);
+  const lastUpdateRef = useRef<number>(0);
 
   // 设备方向
   const [heading, setHeading] = useState<number>(0);
@@ -66,12 +67,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const [gpsHeadingDeg, setGpsHeadingDeg] = useState<number | null>(null); // 行进方向
   const [gpsSpeedKts, setGpsSpeedKts] = useState<number | null>(null);     // 速度 (节)
   const [gpsOk, setGpsOk] = useState<boolean>(false);
+  const [gpsTipVisible, setGpsTipVisible] = useState(false);
+  const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
   const lastGpsTsRef = useRef<number>(0);
-
-  // ---- GPS 详情 & 调试日志 ----
-  const [gpsDetail, setGpsDetail] = useState<GeolocationPosition | null>(null);
-  const [showGpsDetail, setShowGpsDetail] = useState(false);
-  const [gpsLogs, setGpsLogs] = useState<string[]>([]);
 
   // 根据经纬度、方位角和距离计算目标点（复用）
   const destinationPoint = (
@@ -329,17 +327,11 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                 }
                 setGpsOk(true);
                 lastGpsTsRef.current = Date.now();
+                // 记录最后一次 GPS 信息供提示使用
+                setLastGpsInfo({ lat: latlng.lat, lng: latlng.lng, ts: Date.now() });
 
-                // 保存 GPS 详情
-                setGpsDetail(pos);
-
-                // 追加调试日志（最多保留 20 条）
-                const logLine =
-                  new Date().toLocaleTimeString() +
-                  ` lat:${latitude.toFixed(6)} lng:${longitude.toFixed(6)}` +
-                  ` spd:${speed != null && !Number.isNaN(speed) ? (speed * 1.94384).toFixed(1) : '--'}kt` +
-                  ` hdg:${gpsHeading != null && !Number.isNaN(gpsHeading) ? gpsHeading.toFixed(0) : '--'}°`;
-                setGpsLogs((prev) => [...prev.slice(-19), logLine]);
+                // 记录自身位置（管理员和观察者均适用）
+                myPosRef.current = latlng;
               }
 
               // 管理员发布位置
@@ -410,7 +402,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               setErrorMsg('无法获取定位权限');
               setGpsOk(false);
             },
-            { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 }
           );
           console.debug('[GPS] watchPosition started, id:', geoWatchIdRef.current);
         } else {
@@ -520,14 +512,14 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     }
   }, [courseAxis, courseSizeNm, startLineLenM]);
 
-  // 在组件级别添加一个定时器，若 10s 未收到 GPS 数据则标红
+  // 在组件级别添加一个定时器，若 2.5s 未收到 GPS 数据则标红
   useEffect(() => {
     if (isAdmin) return;
     const id = setInterval(() => {
-      if (Date.now() - lastGpsTsRef.current > 10000) {
+      if (Date.now() - lastGpsTsRef.current > 2500) {
         setGpsOk(false);
       }
-    }, 3000);
+    }, 1000);
     return () => clearInterval(id);
   }, [isAdmin]);
 
@@ -582,7 +574,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
             lineHeight: 1.2,
             cursor: 'pointer',
           }}
-          onClick={() => setShowGpsDetail((v) => !v)}
+          onClick={() => setGpsTipVisible((v) => !v)}
         >
           <div style={{ fontSize: 22, fontWeight: 'bold' }}>
             {gpsSpeedKts != null ? gpsSpeedKts.toFixed(1) : '--'}<span style={{ fontSize: 14 }}> kt</span>
@@ -602,31 +594,17 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               background: gpsOk ? '#28a745' : '#dc3545',
             }}
           />
-
-          {/* GPS 详情 Tooltip */}
-          {showGpsDetail && gpsDetail && (
+          {gpsTipVisible && lastGpsInfo && (
             <div
               style={{
-                position: 'absolute',
-                top: '100%',
-                left: '50%',
-                transform: 'translate(-50%, 8px)',
-                background: 'rgba(0,0,0,0.85)',
-                color: '#0f0',
-                padding: '8px 12px',
-                borderRadius: 8,
-                fontSize: 12,
+                marginTop: 6,
+                fontSize: 10,
+                lineHeight: 1.3,
                 whiteSpace: 'nowrap',
-                zIndex: 1300,
-                lineHeight: 1.4,
               }}
             >
-              <div>LAT: {gpsDetail.coords.latitude.toFixed(6)}</div>
-              <div>LNG: {gpsDetail.coords.longitude.toFixed(6)}</div>
-              <div>ACC: {gpsDetail.coords.accuracy} m</div>
-              <div>HDG: {gpsDetail.coords.heading != null && !Number.isNaN(gpsDetail.coords.heading as any) ? gpsDetail.coords.heading!.toFixed(1) + '°' : '--'}</div>
-              <div>SPD: {gpsDetail.coords.speed != null && !Number.isNaN(gpsDetail.coords.speed as any) ? (gpsDetail.coords.speed! * 1.94384).toFixed(1) + ' kt' : '--'}</div>
-              <div>TS: {new Date(gpsDetail.timestamp).toLocaleTimeString()}</div>
+              {new Date(lastGpsInfo.ts).toLocaleTimeString()}<br />
+              {lastGpsInfo.lat.toFixed(5)}, {lastGpsInfo.lng.toFixed(5)}
             </div>
           )}
         </div>
@@ -648,8 +626,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           style={toolBtnStyle}
           title="定位到当前位置"
           onClick={() => {
-            if (mapRef.current && lastPosRef.current) {
-              mapRef.current.setView(lastPosRef.current, 15);
+            if (mapRef.current && myPosRef.current) {
+              mapRef.current.setView(myPosRef.current, 15);
             }
           }}
         >
@@ -723,31 +701,6 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
         <InfoCard title="COURSE AXIS" value={`${courseAxis || '--'}°M`} />
         <InfoCard title="COURSE SIZE" value={`${courseSizeNm || '--'}NM`} />
       </div>
-
-      {/* GPS 调试日志 */}
-      {!isAdmin && gpsLogs.length > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 120,
-            left: 8,
-            right: 8,
-            maxHeight: 200,
-            overflowY: 'auto',
-            background: 'rgba(0,0,0,0.6)',
-            color: '#0f0',
-            fontFamily: 'monospace',
-            fontSize: 12,
-            padding: 8,
-            borderRadius: 4,
-            zIndex: 1500,
-          }}
-        >
-          {gpsLogs.map((l, idx) => (
-            <div key={idx}>{l}</div>
-          ))}
-        </div>
-      )}
 
       {/* 设置对话框 */}
       {isAdmin && settingsVisible && (
