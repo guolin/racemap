@@ -62,6 +62,12 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const [startLineLenM, setStartLineLenM] = useState<string>(() => String(getStored('startLineLenM', START_LINE_LENGTH_M)));
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // ---- GPS 信息（仅观察者端显示） ----
+  const [gpsHeadingDeg, setGpsHeadingDeg] = useState<number | null>(null); // 行进方向
+  const [gpsSpeedKts, setGpsSpeedKts] = useState<number | null>(null);     // 速度 (节)
+  const [gpsOk, setGpsOk] = useState<boolean>(false);
+  const lastGpsTsRef = useRef<number>(0);
+
   // 根据经纬度、方位角和距离计算目标点（复用）
   const destinationPoint = (
     lat: number,
@@ -308,6 +314,16 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                   myMarkerRef.current.setLatLng(latlng);
                   myMarkerRef.current.setIcon(createHeadingIcon(dir));
                 }
+
+                // 更新 GPS 信息面板（速度 & 方向）
+                if (gpsHeading != null && !Number.isNaN(gpsHeading)) {
+                  setGpsHeadingDeg(gpsHeading);
+                }
+                if (speed != null && !Number.isNaN(speed)) {
+                  setGpsSpeedKts(speed * 1.94384); // m/s → knots
+                }
+                setGpsOk(true);
+                lastGpsTsRef.current = Date.now();
               }
 
               // 管理员发布位置
@@ -376,6 +392,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                 TIMEOUT: 3
               });
               setErrorMsg('无法获取定位权限');
+              setGpsOk(false);
             },
             { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
           );
@@ -487,6 +504,17 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     }
   }, [courseAxis, courseSizeNm, startLineLenM]);
 
+  // 在组件级别添加一个定时器，若 10s 未收到 GPS 数据则标红
+  useEffect(() => {
+    if (isAdmin) return;
+    const id = setInterval(() => {
+      if (Date.now() - lastGpsTsRef.current > 10000) {
+        setGpsOk(false);
+      }
+    }, 3000);
+    return () => clearInterval(id);
+  }, [isAdmin]);
+
   return (
     <div style={{ position: 'relative', height: '100vh', width: '100vw' }}>
       {/* 实际地图容器 */}
@@ -521,8 +549,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
         </div>
       </div>
 
-      {/* 数字指南针显示 */}
-      {!isAdmin && Number.isFinite(heading) && (
+      {/* GPS 信息面板（观察者） */}
+      {!isAdmin && (
         <div
           style={{
             position: 'absolute',
@@ -534,11 +562,28 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
             padding: '8px 12px',
             textAlign: 'center',
             zIndex: 1100,
-            minWidth: 90,
+            minWidth: 100,
+            lineHeight: 1.2,
           }}
         >
-          <div style={{ fontSize: 28, fontWeight: 'bold' }}>{Math.round(heading)}°<span style={{ fontSize: 16 }}>M</span></div>
-          <div style={{ fontSize: 10, letterSpacing: 1 }}>COMPASS</div>
+          <div style={{ fontSize: 22, fontWeight: 'bold' }}>
+            {gpsSpeedKts != null ? gpsSpeedKts.toFixed(1) : '--'}<span style={{ fontSize: 14 }}> kt</span>
+          </div>
+          <div style={{ fontSize: 12 }}>
+            {gpsHeadingDeg != null ? Math.round(gpsHeadingDeg) + '°' : '--'}
+          </div>
+          {/* GPS 状态指示点 */}
+          <span
+            style={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: gpsOk ? '#28a745' : '#dc3545',
+            }}
+          />
         </div>
       )}
 
