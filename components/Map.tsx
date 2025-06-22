@@ -40,6 +40,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const [heading, setHeading] = useState<number>(0);
   const [settingsVisible, setSettingsVisible] = useState(false);
 
+  // 地图旋转（0 = 北朝上；负 axis = 航线朝上）
+  const [mapRotationDeg, setMapRotationDeg] = useState<number>(0);
+
   // ---- 本地持久化: 默认值读取 ----
   const getStored = (key: string, def: number): number => {
     if (typeof window === 'undefined') return def;
@@ -440,6 +443,15 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     }
   }, [isAdmin, courseAxis, courseSizeNm, startLineLenM]);
 
+  // 应用旋转到地图容器
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const el = mapRef.current.getContainer();
+    el.style.transformOrigin = 'center center';
+    el.style.transition = 'transform 0.4s';
+    el.style.transform = `rotate(${mapRotationDeg}deg)`;
+  }, [mapRotationDeg]);
+
   return (
     <div style={{ position: 'relative', height: '100vh', width: '100vw' }}>
       {/* 实际地图容器 */}
@@ -529,7 +541,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
         )}
       </div>
 
-      {/* 指北指示按钮（与设备方向无关） */}
+      {/* 指南针按钮：点击切换 北朝上 / 航线朝上 */}
       <button
         style={{
           position: 'absolute',
@@ -545,6 +557,10 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           justifyContent: 'center',
           zIndex: 1000,
           cursor: 'pointer',
+        }}
+        onClick={() => {
+          const axisNum = Number(courseAxis) || 0;
+          setMapRotationDeg((prev) => (prev === 0 ? -axisNum : 0));
         }}
       >
         <div
