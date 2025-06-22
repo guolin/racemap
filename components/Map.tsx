@@ -71,6 +71,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
   const lastGpsTsRef = useRef<number>(0);
 
+  const myIconElRef = useRef<HTMLDivElement | null>(null);
+  const myDirRef = useRef<number>(0);
+
   // 根据经纬度、方位角和距离计算目标点（复用）
   const destinationPoint = (
     lat: number,
@@ -313,13 +316,14 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                     icon: createHeadingIcon(dir),
                     zIndexOffset: 500,
                   }).addTo(mapRef.current);
-                  lastHdgRef.current = dir; // reuse heading ref to记录图标角度
+                  myIconElRef.current = myMarkerRef.current.getElement() as HTMLDivElement;
+                  myDirRef.current = dir;
                 } else if (myMarkerRef.current) {
-                  // 只更新位置；方向变化显著时再换图标，减少闪烁
+                  // 只更新位置；方向变化显著时再旋转现有图标，减少闪烁
                   myMarkerRef.current.setLatLng(latlng);
-                  if (Math.abs(dir - lastHdgRef.current) > DIR_THRESHOLD) {
-                    myMarkerRef.current.setIcon(createHeadingIcon(dir));
-                    lastHdgRef.current = dir;
+                  if (Math.abs(dir - myDirRef.current) > DIR_THRESHOLD && myIconElRef.current) {
+                    myIconElRef.current.style.transform = `rotate(${dir}deg)`;
+                    myDirRef.current = dir;
                   }
                 }
 
@@ -652,8 +656,14 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                         icon: createHeadingIcon(dir),
                         zIndexOffset: 500,
                       }).addTo(mapRef.current);
+                      myIconElRef.current = myMarkerRef.current.getElement() as HTMLDivElement;
+                      myDirRef.current = dir;
                     } else if (myMarkerRef.current) {
                       myMarkerRef.current.setLatLng(latlng);
+                      if (Math.abs(dir - myDirRef.current) > 2 && myIconElRef.current) {
+                        myIconElRef.current.style.transform = `rotate(${dir}deg)`;
+                        myDirRef.current = dir;
+                      }
                     }
 
                     // 更新 GPS 状态指示
