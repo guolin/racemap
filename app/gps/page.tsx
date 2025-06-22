@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { watchPositionThrottled, clearWatch as clearGeoWatch } from '../../utils/geoThrottle';
 
 interface LogEntry {
   timestamp: number;
@@ -32,6 +33,10 @@ export default function GpsDebugPage() {
 
   // 是否正在追踪
   const [tracking, setTracking] = useState<boolean>(false);
+
+  // 在状态声明区下方新增引用
+  const lastCbTsRef = useRef<number>(0);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 用户点击后启动追踪
   const handleToggleTracking = () => {
@@ -80,7 +85,7 @@ export default function GpsDebugPage() {
     const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 } as PositionOptions;
 
     const startWatch = () => {
-      geoWatchIdRef.current = navigator.geolocation.watchPosition(
+      geoWatchIdRef.current = watchPositionThrottled(
         (pos) => {
           const { latitude, longitude, speed, heading } = pos.coords as GeolocationCoordinates & { heading: number };
           const ts = Date.now();
@@ -99,6 +104,7 @@ export default function GpsDebugPage() {
             const next = [...prev, entry];
             return next.length > 200 ? next.slice(next.length - 200) : next;
           });
+          lastCbTsRef.current = ts;
         },
         (err) => {
           console.error('[GPS] error', err);
@@ -109,14 +115,14 @@ export default function GpsDebugPage() {
           // TIMEOUT 自动重试
           if (err.code === 3 && tracking) {
             if (geoWatchIdRef.current != null) {
-              navigator.geolocation.clearWatch(geoWatchIdRef.current as number);
+              clearGeoWatch(geoWatchIdRef.current as number);
               geoWatchIdRef.current = null;
             }
             // 立即重启 watch
             startWatch();
           }
         },
-        options
+        { ...options, throttleTime: 1000 }
       );
     };
 
@@ -124,7 +130,7 @@ export default function GpsDebugPage() {
 
     return () => {
       if (geoWatchIdRef.current != null) {
-        navigator.geolocation.clearWatch(geoWatchIdRef.current as number);
+        clearGeoWatch(geoWatchIdRef.current as number);
         geoWatchIdRef.current = null;
       }
     };
@@ -175,6 +181,30 @@ export default function GpsDebugPage() {
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
+
+  // ---- 轮询定时器：若 1.2s 未收到 watch 回调则主动 getCurrentPosition ----
+  useEffect(() => {
+    if (!tracking) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    pollIntervalRef.current = setInterval(() => {
+      if (Date.now() - lastCbTsRef.current > 1200) {
+        fetchOnce();
+      }
+    }, 1000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [tracking]);
 
   return (
     <div style={{ padding: 16 }}>
