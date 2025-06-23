@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { getMqttClient } from '../utils/mqtt';
+import { useMqttClient } from '@features/mqtt/hooks';
+import { useCourseStore } from '@features/course/store';
+import { drawCourse as renderCourse } from '@features/map/services/drawCourse';
+import { InfoCard } from '@shared/ui/InfoCard';
 
 console.debug('[Map] module loaded');
 
@@ -29,258 +32,178 @@ if (typeof window !== 'undefined') {
 const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   try {
     console.debug('[Map] component initialized, courseId:', courseId, 'isAdmin:', isAdmin);
-  const mapRef = useRef<L.Map | null>(null);
-  const boatMarkerRef = useRef<L.Marker | null>(null);
-  const routeLineRef = useRef<L.FeatureGroup | null>(null);
-  const lastPosRef = useRef<L.LatLng | null>(null); // 存储最新定位（信号船）
-  const myPosRef = useRef<L.LatLng | null>(null);  // 观察者自身位置
-  const mqttRef = useRef<any>(null);
-  const geoWatchIdRef = useRef<number | null>(null);
-  const publishIntervalRef = useRef<any>(null);
-  const lastPublishRef = useRef<number>(0);
-  const myMarkerRef = useRef<L.Marker | null>(null);
-  // 方向防抖记录
-  const lastHdgRef = useRef<number>(0);
-  const lastUpdateRef = useRef<number>(0);
+    const mapRef = useRef<L.Map | null>(null);
+    const boatMarkerRef = useRef<L.Marker | null>(null);
+    const routeLineRef = useRef<L.FeatureGroup | null>(null);
+    const lastPosRef = useRef<L.LatLng | null>(null); // 存储最新定位（信号船）
+    const myPosRef = useRef<L.LatLng | null>(null);  // 观察者自身位置
+    const mqttClient = useMqttClient();
+    const geoWatchIdRef = useRef<number | null>(null);
+    const publishIntervalRef = useRef<any>(null);
+    const lastPublishRef = useRef<number>(0);
+    const myMarkerRef = useRef<L.Marker | null>(null);
+    // 方向防抖记录
+    const lastHdgRef = useRef<number>(0);
+    const lastUpdateRef = useRef<number>(0);
 
-  // 设备方向
-  const [heading, setHeading] = useState<number>(0);
-  const [settingsVisible, setSettingsVisible] = useState(false);
+    // 设备方向
+    const [heading, setHeading] = useState<number>(0);
+    const [settingsVisible, setSettingsVisible] = useState(false);
 
-  // 当前地图 Bearing，0 = 磁北朝上，负 axis = 航线朝上
-  const [mapBearing, setMapBearing] = useState<number>(0);
+    // 当前地图 Bearing，0 = 磁北朝上，负 axis = 航线朝上
+    const [mapBearing, setMapBearing] = useState<number>(0);
 
-  // ---- 本地持久化: 默认值读取 ----
-  const getStored = (key: string, def: number): number => {
-    if (typeof window === 'undefined') return def;
-    const v = localStorage.getItem(key);
-    const n = v !== null ? Number(v) : NaN;
-    return Number.isNaN(n) ? def : n;
-  };
+    // ---- 本地持久化: 默认值读取 ----
+    const {
+      axis: courseAxisNum,
+      distanceNm: courseSizeNmNum,
+      startLineM: startLineLenMNum,
+      setAxis,
+      setDistanceNm,
+      setStartLineM,
+    } = useCourseStore();
 
-  const [courseAxis, setCourseAxis] = useState<string>(() => String(getStored('courseAxis', WIND_DIRECTION)));
-  const [courseSizeNm, setCourseSizeNm] = useState<string>(() => String(getStored('courseSizeNm', COURSE_DISTANCE_NM)));
-  const [startLineLenM, setStartLineLenM] = useState<string>(() => String(getStored('startLineLenM', START_LINE_LENGTH_M)));
+    // 本地字符串用于 input 受控
+    const [courseAxis, setCourseAxis] = useState<string>(() => String(courseAxisNum));
+    const [courseSizeNm, setCourseSizeNm] = useState<string>(() => String(courseSizeNmNum));
+    const [startLineLenM, setStartLineLenM] = useState<string>(() => String(startLineLenMNum));
+
+    // 同步 store -> local string when store changes外部更新时
+    useEffect(() => setCourseAxis(String(courseAxisNum)), [courseAxisNum]);
+    useEffect(() => setCourseSizeNm(String(courseSizeNmNum)), [courseSizeNmNum]);
+    useEffect(() => setStartLineLenM(String(startLineLenMNum)), [startLineLenMNum]);
+
+    // ---- GPS 信息（仅观察者端显示） ----
+    const [gpsHeadingDeg, setGpsHeadingDeg] = useState<number | null>(null); // 行进方向
+    const [gpsSpeedKts, setGpsSpeedKts] = useState<number | null>(null);     // 速度 (节)
+    const [gpsOk, setGpsOk] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [gpsTipVisible, setGpsTipVisible] = useState(false);
+    const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
+    const lastGpsTsRef = useRef<number>(0);
 
-  // ---- GPS 信息（仅观察者端显示） ----
-  const [gpsHeadingDeg, setGpsHeadingDeg] = useState<number | null>(null); // 行进方向
-  const [gpsSpeedKts, setGpsSpeedKts] = useState<number | null>(null);     // 速度 (节)
-  const [gpsOk, setGpsOk] = useState<boolean>(false);
-  const [gpsTipVisible, setGpsTipVisible] = useState(false);
-  const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
-  const lastGpsTsRef = useRef<number>(0);
+    const myIconElRef = useRef<HTMLDivElement | null>(null);
+    const myDirRef = useRef<number>(0);
 
-  const myIconElRef = useRef<HTMLDivElement | null>(null);
-  const myDirRef = useRef<number>(0);
+    // 在现有 hooks 定义后插入 headingRef，用于跨 effect 读取
+    const headingRef = useRef<number>(0);
 
-  // 在现有 hooks 定义后插入 headingRef，用于跨 effect 读取
-  const headingRef = useRef<number>(0);
+    // 👇 添加航迹方向相关引用
+    const lastGpsLatLngRef = useRef<L.LatLng | null>(null); // 保存上一条 GPS 坐标
+    const lastBearingRef = useRef<number>(0); // 最近一次有效 bearing (0~360)
 
-  // 👇 添加航迹方向相关引用
-  const lastGpsLatLngRef = useRef<L.LatLng | null>(null); // 保存上一条 GPS 坐标
-  const lastBearingRef = useRef<number>(0); // 最近一次有效 bearing (0~360)
+    const drawCourse = useCallback(
+      (origin: L.LatLng) => {
+        if (!mapRef.current) return;
+        lastPosRef.current = origin;
+        routeLineRef.current = renderCourse(
+          mapRef.current,
+          origin,
+          {
+            axis: courseAxisNum,
+            distanceNm: courseSizeNmNum,
+            startLineM: startLineLenMNum,
+          },
+          routeLineRef.current
+        );
+      },
+      [courseAxisNum, courseSizeNmNum, startLineLenMNum]
+    );
 
-  // 根据经纬度、方位角和距离计算目标点（复用）
-  const destinationPoint = (
-    lat: number,
-    lng: number,
-    bearing: number,
-    distance: number
-  ) => {
-    const R = 6378137;
-    const δ = distance / R;
-    const θ = (bearing * Math.PI) / 180;
-    const φ1 = (lat * Math.PI) / 180;
-    const λ1 = (lng * Math.PI) / 180;
+    // helper to create heading icon
+    const createHeadingIcon = (angle: number) => {
+      const size = 28;
+      const html = `<div style=\"width:${size}px;height:${size}px;transform:rotate(${angle}deg);transition:transform .2s;font-size:0;\"><svg viewBox='0 0 100 100' width='${size}' height='${size}' style='display:block'><polygon points='50,10 85,90 50,70 15,90' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
+      return L.divIcon({ html, className: 'my-boat-icon', iconSize: [size, size], iconAnchor: [size/2, size] });
+    };
 
-    const sinφ1 = Math.sin(φ1);
-    const cosφ1 = Math.cos(φ1);
-    const sinδ = Math.sin(δ);
-    const cosδ = Math.cos(δ);
+    useEffect(() => {
+      if (mapRef.current) return;
 
-    const sinφ2 = sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ);
-    const φ2 = Math.asin(sinφ2);
-    const y = Math.sin(θ) * sinδ * cosφ1;
-    const x = cosδ - sinφ1 * sinφ2;
-    const λ2 = λ1 + Math.atan2(y, x);
+      // 启用 leaflet-rotate 插件（rotate: true）
+      const map = L.map('map-root', {
+        zoomControl: false,
+        rotate: true,
+      } as L.MapOptions & { rotate: boolean });
+      L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+        {
+          attribution: '©OpenStreetMap, ©CartoDB',
+          subdomains: 'abcd',
+          maxZoom: 19,
+          noWrap: true,
+          crossOrigin: true
+        }
+      ).addTo(map);
+      mapRef.current = map;
 
-    return [
-      (φ2 * 180) / Math.PI,
-      (((λ2 + 3 * Math.PI) % (2 * Math.PI) - Math.PI) * 180) / Math.PI,
-    ] as [number, number];
-  };
+      // 底部右侧缩放控件
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  const drawCourse = useCallback(
-    (origin: L.LatLng) => {
-      lastPosRef.current = origin;
-      if (!mapRef.current) return;
-
-      if (routeLineRef.current) {
-        mapRef.current.removeLayer(routeLineRef.current);
-        routeLineRef.current = null;
-      }
-
-      const group = L.featureGroup();
-
-      const axisNum = Number(courseAxis) || 0;
-      const distNm = Number(courseSizeNm) || 0;
-      const startLen = Number(startLineLenM) || 0;
-
-      console.debug('[DRAW] axis', axisNum, 'distNm', distNm, 'startLen', startLen);
-
-      const startMark = destinationPoint(
-        origin.lat,
-        origin.lng,
-        (axisNum + 270) % 360,
-        startLen
-      );
-
-      const midLat = (origin.lat + startMark[0]) / 2;
-      const midLng = (origin.lng + startMark[1]) / 2;
-
-      const mark1 = destinationPoint(
-        midLat,
-        midLng,
-        axisNum,
-        distNm * 1852
-      );
-
-      const startLine = L.polyline([origin, startMark], {
-        color: '#ff7f0e',
-        weight: 3,
+      // 船只图标：红色圆圈
+      const boatIcon = L.divIcon({
+        className: 'signal-boat-icon',
+        html: '<div style="width:18px;height:18px;border-radius:50%;background:#e12d39;box-shadow:0 0 4px rgba(0,0,0,0.25);"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
       });
 
-      const courseLine = L.polyline(
-        [
-          [midLat, midLng],
-          mark1,
-        ],
-        {
-          color: '#1f77b4',
-          weight: 3,
-        }
-      );
+      boatMarkerRef.current = L.marker([0, 0], { icon: boatIcon }).addTo(map);
 
-      const markStyle: L.CircleMarkerOptions = {
-        radius: 6,
-        color: '#000',
-        weight: 1,
-        fillColor: '#fff',
-        fillOpacity: 1,
+      // 地理定位处理函数
+      const handleLocation = (e: L.LocationEvent) => {
+        if (mapRef.current) {
+          mapRef.current.setView(e.latlng, 15);
+          boatMarkerRef.current?.setLatLng(e.latlng);
+          drawCourse(e.latlng); // 定位后绘制航线
+        }
       };
 
-      const originMarker = L.circleMarker(origin, markStyle).bindTooltip('起航船');
-      const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip('起航标');
-      const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip('1 标');
-
-      group.addLayer(startLine);
-      group.addLayer(courseLine);
-      group.addLayer(originMarker);
-      group.addLayer(startMarkMarker);
-      group.addLayer(mark1Marker);
-
-      group.addTo(mapRef.current);
-      routeLineRef.current = group;
-    },
-    [courseAxis, courseSizeNm, startLineLenM]
-  );
-
-  // helper to create heading icon
-  const createHeadingIcon = (angle: number) => {
-    const size = 28;
-    const html = `<div style=\"width:${size}px;height:${size}px;transform:rotate(${angle}deg);transition:transform .2s;font-size:0;\"><svg viewBox='0 0 100 100' width='${size}' height='${size}' style='display:block'><polygon points='50,10 85,90 50,70 15,90' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
-    return L.divIcon({ html, className: 'my-boat-icon', iconSize: [size, size], iconAnchor: [size/2, size] });
-  };
-
-  useEffect(() => {
-    if (mapRef.current) return;
-
-    // 启用 leaflet-rotate 插件（rotate: true）
-    const map = L.map('map-root', {
-      zoomControl: false,
-      rotate: true,
-    } as L.MapOptions & { rotate: boolean });
-    L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
-      {
-        attribution: '©OpenStreetMap, ©CartoDB',
-        subdomains: 'abcd',
-        maxZoom: 19,
-        noWrap: true,
-        crossOrigin: true
+      // 如果浏览器支持地理定位，移动到当前位置
+      if (navigator.geolocation) {
+        map.locate({ setView: false, maxZoom: 15, enableHighAccuracy: true });
+        map.on('locationfound', handleLocation);
       }
-    ).addTo(map);
-    mapRef.current = map;
 
-    // 底部右侧缩放控件
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+      // 方向事件处理（带防抖）
+      const orientationHandler = (ev: DeviceOrientationEvent) => {
+        const raw = (ev as any).webkitCompassHeading != null ? (ev as any).webkitCompassHeading : 360 - (ev.alpha || 0);
+        if (Number.isNaN(raw)) return;
 
-    // 船只图标：红色圆圈
-    const boatIcon = L.divIcon({
-      className: 'signal-boat-icon',
-      html: '<div style="width:18px;height:18px;border-radius:50%;background:#e12d39;box-shadow:0 0 4px rgba(0,0,0,0.25);"></div>',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-    });
+        const now = Date.now();
+        // 仅当角度变化超过 2° 且距离上次更新时间 >120ms 时才更新，减少抖动
+        if (Math.abs(raw - lastHdgRef.current) > 2 && now - lastUpdateRef.current > 120) {
+          lastHdgRef.current = raw;
+          lastUpdateRef.current = now;
+          setHeading(raw);
+          headingRef.current = raw;
+        }
+      };
+      window.addEventListener('deviceorientationabsolute', orientationHandler, true);
+      window.addEventListener('deviceorientation', orientationHandler, true);
 
-    boatMarkerRef.current = L.marker([0, 0], { icon: boatIcon }).addTo(map);
+      // 初始保持北朝上
+      (map as any).setBearing?.(0);
+      map.setView([39.9042, 116.4074], 12);
 
-    // 地理定位处理函数
-    const handleLocation = (e: L.LocationEvent) => {
-      if (mapRef.current) {
-        mapRef.current.setView(e.latlng, 15);
-        boatMarkerRef.current?.setLatLng(e.latlng);
-        drawCourse(e.latlng); // 定位后绘制航线
-      }
-    };
-
-    // 如果浏览器支持地理定位，移动到当前位置
-    if (navigator.geolocation) {
-      map.locate({ setView: false, maxZoom: 15, enableHighAccuracy: true });
-      map.on('locationfound', handleLocation);
-    }
-
-    // 方向事件处理（带防抖）
-    const orientationHandler = (ev: DeviceOrientationEvent) => {
-      const raw = (ev as any).webkitCompassHeading != null ? (ev as any).webkitCompassHeading : 360 - (ev.alpha || 0);
-      if (Number.isNaN(raw)) return;
-
-      const now = Date.now();
-      // 仅当角度变化超过 2° 且距离上次更新时间 >120ms 时才更新，减少抖动
-      if (Math.abs(raw - lastHdgRef.current) > 2 && now - lastUpdateRef.current > 120) {
-        lastHdgRef.current = raw;
-        lastUpdateRef.current = now;
-        setHeading(raw);
-        headingRef.current = raw;
-      }
-    };
-    window.addEventListener('deviceorientationabsolute', orientationHandler, true);
-    window.addEventListener('deviceorientation', orientationHandler, true);
-
-    // 初始保持北朝上
-    (map as any).setBearing?.(0);
-    map.setView([39.9042, 116.4074], 12);
-
-    return () => {
-      map.off('locationfound', handleLocation);
-      map.stopLocate();
-      if (routeLineRef.current) {
-        map.removeLayer(routeLineRef.current);
-        routeLineRef.current = null;
-      }
-      window.removeEventListener('deviceorientationabsolute', orientationHandler, true);
-      window.removeEventListener('deviceorientation', orientationHandler, true);
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [courseId]);
+      return () => {
+        map.off('locationfound', handleLocation);
+        map.stopLocate();
+        if (routeLineRef.current) {
+          map.removeLayer(routeLineRef.current);
+          routeLineRef.current = null;
+        }
+        window.removeEventListener('deviceorientationabsolute', orientationHandler, true);
+        window.removeEventListener('deviceorientation', orientationHandler, true);
+        map.remove();
+        mapRef.current = null;
+      };
+    }, [courseId]);
 
     useEffect(() => {
       // 建立 MQTT 连接
       console.debug('[Map] setting up MQTT connection...');
-      const client = getMqttClient();
-      mqttRef.current = client;
+      const client = mqttClient;
 
       const topic = posTopic(courseId);
       console.debug('[Map] subscribing to topic:', topic);
@@ -373,12 +296,12 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
 
               // 管理员发布位置
               if (isAdmin) {
-                console.debug('[ADMIN] processing position update, MQTT connected:', mqttRef.current?.connected);
+                console.debug('[ADMIN] processing position update, MQTT connected:', mqttClient?.connected);
                 // 保存最新位置供定时器使用
                 lastPosRef.current = latlng;
 
                 // 如果 MQTT 已连接且距离上次发送超过 15s，则立即发送一次
-                if (mqttRef.current?.connected && Date.now() - lastPublishRef.current > 15000) {
+                if (mqttClient?.connected && Date.now() - lastPublishRef.current > 15000) {
                   console.debug('[ADMIN] sending immediate publish, last publish was:', new Date(lastPublishRef.current));
                   const payload = {
                     id: 'ADMIN',
@@ -392,16 +315,16 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                     timestamp: Date.now(),
                   };
                   console.debug('[MQTT] immediate publish', posTopic(courseId), payload);
-                  mqttRef.current.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
+                  mqttClient.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
                   lastPublishRef.current = Date.now();
                 }
 
                 // 启动 15s 发布定时器（仅一次）
-                if (mqttRef.current?.connected && !publishIntervalRef.current) {
+                if (mqttClient?.connected && !publishIntervalRef.current) {
                   console.debug('[ADMIN] starting 15s interval timer');
                   publishIntervalRef.current = setInterval(() => {
-                    console.debug('[ADMIN] interval timer triggered, lastPos:', lastPosRef.current, 'MQTT connected:', mqttRef.current?.connected);
-                    if (!lastPosRef.current || !mqttRef.current?.connected) return;
+                    console.debug('[ADMIN] interval timer triggered, lastPos:', lastPosRef.current, 'MQTT connected:', mqttClient?.connected);
+                    if (!lastPosRef.current || !mqttClient?.connected) return;
                     const p = lastPosRef.current;
                     const payload = {
                       id: 'ADMIN',
@@ -415,7 +338,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                       timestamp: Date.now(),
                     };
                     console.debug('[MQTT] publish', posTopic(courseId), payload);
-                    mqttRef.current.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
+                    mqttClient.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
                     lastPublishRef.current = Date.now();
                   }, 15000);
                 }
@@ -442,7 +365,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               setErrorMsg('无法获取定位权限');
               setGpsOk(false);
             },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 }
+            { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
           );
           console.debug('[GPS] watchPosition started, id:', geoWatchIdRef.current);
         } else {
@@ -479,9 +402,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
               const distStr = Number(distance_nm).toString();
               const startStr = Number(start_line_m).toString();
 
-              if (!Number.isNaN(Number(axisStr))) setCourseAxis(axisStr);
-              if (!Number.isNaN(Number(distStr))) setCourseSizeNm(distStr);
-              if (!Number.isNaN(Number(startStr))) setStartLineLenM(startStr);
+              if (!Number.isNaN(Number(axisStr))) setAxis(Number(axisStr));
+              if (!Number.isNaN(Number(distStr))) setDistanceNm(Number(distStr));
+              if (!Number.isNaN(Number(startStr))) setStartLineM(Number(startStr));
 
               // 若已有定位，则立即基于接收到的参数重绘
               if (lastPosRef.current) {
@@ -514,7 +437,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           myMarkerRef.current = null;
         }
       };
-    }, [courseId, isAdmin, courseAxis, courseSizeNm, startLineLenM]);
+    }, [courseId, isAdmin, courseAxis, courseSizeNm, startLineLenM, setAxis, setDistanceNm, setStartLineM]);
 
   // iOS 方向权限请求
   useEffect(() => {
@@ -529,17 +452,16 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     return () => document.removeEventListener('click', requestOrientPermission);
   }, []);
 
-  // ---- 本地持久化: 监听更新 ----
+  // ---- course param local string -> store persist when admin edits ----
   useEffect(() => {
     if (!isAdmin) return;
-    try {
-      localStorage.setItem('courseAxis', String(courseAxis));
-      localStorage.setItem('courseSizeNm', String(courseSizeNm));
-      localStorage.setItem('startLineLenM', String(startLineLenM));
-    } catch (e) {
-      console.warn('[Map] Failed to persist course settings', e);
-    }
-  }, [isAdmin, courseAxis, courseSizeNm, startLineLenM]);
+    const a = Number(courseAxis);
+    const d = Number(courseSizeNm);
+    const s = Number(startLineLenM);
+    if (!Number.isNaN(a)) setAxis(a);
+    if (!Number.isNaN(d)) setDistanceNm(d);
+    if (!Number.isNaN(s)) setStartLineM(s);
+  }, [isAdmin, courseAxis, courseSizeNm, startLineLenM, setAxis, setDistanceNm, setStartLineM]);
 
   // 同步 state 到 map.setBearing（插件方法）
   useEffect(() => {
@@ -730,7 +652,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                     boatMarkerRef.current?.setLatLng(latlng);
                     if (!routeLineRef.current) drawCourse(latlng);
 
-                    if (mqttRef.current?.connected) {
+                    if (mqttClient?.connected) {
                       const payload = {
                         id: 'ADMIN',
                         lat: latlng.lat,
@@ -743,7 +665,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                         timestamp: Date.now(),
                       };
                       console.debug('[MQTT] manual publish', posTopic(courseId), payload);
-                      mqttRef.current.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
+                      mqttClient.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
                       lastPublishRef.current = Date.now();
                     }
                   }
@@ -755,7 +677,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                   console.error('[GPS] manual geo error', err);
                   setErrorMsg('无法获取定位权限');
                 },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
               );
             }
           }}
@@ -798,7 +720,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       >
         <div
           style={{
-            transform: 'rotate(0deg)',
+            transform: `rotate(${mapBearing}deg)`,
             transition: 'transform 0.3s',
             fontSize: 24,
           }}
@@ -827,8 +749,8 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
           zIndex: 1000,
         }}
       >
-        <InfoCard title="COURSE AXIS" value={`${courseAxis || '--'}°M`} />
-        <InfoCard title="COURSE SIZE" value={`${courseSizeNm || '--'}NM`} />
+        <InfoCard title="COURSE AXIS" value={`${courseAxisNum}°M`} />
+        <InfoCard title="COURSE SIZE" value={`${courseSizeNmNum}NM`} />
       </div>
 
       {/* 设置对话框 */}
@@ -936,7 +858,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                   setSettingsVisible(false);
                   if (lastPosRef.current) drawCourse(lastPosRef.current);
                   // 立即发布最新航线设置
-                  if (isAdmin && mqttRef.current?.connected) {
+                  if (isAdmin && mqttClient?.connected) {
                     const p = lastPosRef.current ?? L.latLng(0, 0);
                     const payload = {
                       id: 'ADMIN',
@@ -950,7 +872,7 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                       timestamp: Date.now(),
                     };
                     console.debug('[MQTT] publish course update', posTopic(courseId), payload);
-                    mqttRef.current.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
+                    mqttClient.publish(posTopic(courseId), JSON.stringify(payload), { retain: true });
                   }
                 }}
                 style={{
@@ -1006,23 +928,5 @@ const toolBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
 };
-
-function InfoCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div
-      style={{
-        minWidth: 120,
-        background: '#fff',
-        padding: '8px 12px',
-        borderRadius: 8,
-        textAlign: 'center',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-      }}
-    >
-      <div style={{ fontSize: 20, fontWeight: 'bold' }}>{value}</div>
-      <div style={{ fontSize: 12, color: '#666' }}>{title}</div>
-    </div>
-  );
-} 
 
 export default MapView; 

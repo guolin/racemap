@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { getMqttClient } from '../../utils/mqtt';
+import { getMqttClient } from '@features/mqtt/service';
 
 const posTopic = (id: string) => `sailing/${id}/pos`;
 const routeTopic = (id: string) => `sailing/${id}/route`;

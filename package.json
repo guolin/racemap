@@ -13,13 +13,25 @@
     "mqtt": "^4.3.7",
     "next": "13.5.4",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.11.3",
     "@types/leaflet": "^1.9.7",
     "@types/node": "^20.8.5",
     "@types/react": "^18.2.14",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "postcss": "^8.5.6",
+    "prettier": "^3.5.3",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.2.2"
   }
 }

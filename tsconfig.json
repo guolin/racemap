@@ -25,6 +25,12 @@
       ],
       "@utils/*": [
         "utils/*"
+      ],
+      "@features/*": [
+        "src/features/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
       ]
     },
     "types": [
