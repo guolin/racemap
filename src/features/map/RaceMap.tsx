@@ -60,7 +60,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     courseId,
     isAdmin,
     getLatestPos: () => lastPosRef.current,
-    getCourseParams: () => ({ axis: courseAxis, distance_nm: courseSizeNm, start_line_m: startLineLenM }),
+    getCourseParams: () => ({ axis: String(courseAxisNum), distance_nm: String(courseSizeNmNum), start_line_m: String(startLineLenMNum) }),
     onRecvPos: (p) => !isAdmin && redraw(p),
     onRecvCourse: (p) => {
       setAxis(p.axis); setDistanceNm(p.distance_nm); setStartLineM(p.start_line_m);
@@ -83,19 +83,24 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     if (!gps.latLng || !mapRef.current) return;
     const dir = gps.headingDeg ?? lastDirRef.current;
     if (dir != null && !Number.isNaN(dir)) lastDirRef.current = dir;
-    const displayDir = ((mapBearing - lastDirRef.current) % 360 + 360) % 360;
     if (!myMarkerRef.current) {
       const size = 28;
-      const iconHtml = `<div style=\"width:${size}px;height:${size}px;font-size:0;\"><svg viewBox='0 0 100 100' width='${size}' height='${size}' style='display:block'><polygon points='50,10 85,90 50,70 15,90' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
+      // 调整 viewBox 和箭头位置，使箭头尖端在 y=0
+      const iconHtml = `<div style=\"width:${size}px;height:${size}px;font-size:0;\"><svg viewBox='0 0 100 80' width='${size}' height='${size}' style='display:block'><polygon points='50,0 85,80 50,60 15,80' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
       myMarkerRef.current = L.marker(gps.latLng, {
-        icon: L.divIcon({ html: iconHtml, className: 'observer-icon', iconSize: [size, size], iconAnchor: [size/2, size] }),
-        rotationAngle: displayDir,
-        rotationOrigin: 'center center',
+        icon: L.divIcon({ 
+          html: iconHtml, 
+          className: 'observer-icon', 
+          iconSize: [size, size], 
+          iconAnchor: [size/2, 0], // 锚点在箭头尖端 (y=0)
+        }),
+        rotationAngle: lastDirRef.current + mapBearing,
+        rotationOrigin: 'top center', // 旋转中心也在箭头尖端
         zIndexOffset: 500,
       } as any).addTo(mapRef.current);
     } else {
       myMarkerRef.current.setLatLng(gps.latLng);
-      (myMarkerRef.current as any).setRotationAngle(displayDir);
+      (myMarkerRef.current as any).setRotationAngle(lastDirRef.current + mapBearing); // 这里也改为加号
     }
   }, [gps.latLng, gps.headingDeg, mapBearing, isAdmin]);
 
@@ -145,7 +150,12 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
           )}
         </div>
       )}
-      <SideToolbar isAdmin={isAdmin} onLocate={() => { if (gps.latLng && mapRef.current) mapRef.current.setView(gps.latLng, 15); }} onSettings={() => setSettingsVisible(true)} />
+      <SideToolbar isAdmin={isAdmin} onLocate={() => { 
+        if (gps.latLng && mapRef.current) {
+          // 平滑地移动到用户位置，但保持当前缩放级别
+          mapRef.current.panTo(gps.latLng, { animate: true });
+        }
+      }} onSettings={() => setSettingsVisible(true)} />
       <SettingsSheet isVisible={isAdmin && settingsVisible} courseAxis={courseAxis} courseSizeNm={courseSizeNm} startLineLenM={startLineLenM} setCourseAxis={setCourseAxis} setCourseSizeNm={setCourseSizeNm} setStartLineLenM={setStartLineLenM} onCancel={() => setSettingsVisible(false)} onSave={saveSettings} />
       <ErrorBanner message={gps.errorMsg} />
       <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = Number(courseAxis)||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
@@ -155,4 +165,4 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       </div>
     </div>
   );
-} 
+}

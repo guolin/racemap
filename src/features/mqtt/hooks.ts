@@ -5,8 +5,13 @@ import { getMqttClient } from './service';
  * Return the singleton MQTT client.  Lazily connects on first call.
  */
 export function useMqttClient() {
-  // Only create once per component lifecycle.
-  const clientRef = useRef(getMqttClient());
+  const clientRef = useRef<ReturnType<typeof getMqttClient> | null>(null);
+  
+  if (!clientRef.current) {
+    console.debug('[MQTT] First time getting client in component');
+    clientRef.current = getMqttClient();
+  }
+  
   return clientRef.current;
 }
 
@@ -23,9 +28,11 @@ export function useMqttSubscription(
 ) {
   const client = useMqttClient();
   useEffect(() => {
+    console.debug('[MQTT] Subscribing to topic:', topic);
     client.subscribe(topic, { qos: 0 });
     client.on('message', handler);
     return () => {
+      console.debug('[MQTT] Unsubscribing from topic:', topic);
       client.unsubscribe(topic);
       client.off('message', handler);
     };
