@@ -1,33 +1,36 @@
 'use client';
 import React, { ChangeEvent } from 'react';
+import { useCourseStore } from '@features/course/store';
+import { registry, allCoursePlugins, CourseTypeId } from '@features/course/plugins/registry';
 
 interface Props {
   isVisible: boolean;
-  courseAxis: string;
-  courseSizeNm: string;
-  startLineLenM: string;
-  setCourseAxis: (v: string) => void;
-  setCourseSizeNm: (v: string) => void;
-  setStartLineLenM: (v: string) => void;
-  onCancel: () => void;
-  onSave: () => void;
+  onClose: () => void;
 }
 
 /**
- * 管理员航线参数面板（底部抽屉）
+ * 通用航线设置面板（底部抽屉）
  */
-const SettingsSheet: React.FC<Props> = ({
-  isVisible,
-  courseAxis,
-  courseSizeNm,
-  startLineLenM,
-  setCourseAxis,
-  setCourseSizeNm,
-  setStartLineLenM,
-  onCancel,
-  onSave,
-}) => {
+const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
+  const type = useCourseStore((s) => s.type);
+  const params = useCourseStore((s) => s.params);
+  const setType = useCourseStore((s) => s.setType);
+  const setParams = useCourseStore((s) => s.setParams);
+
+  const [draft, setDraft] = React.useState<Record<string, string>>({});
+
+  // 初始化/同步 draft
+  React.useEffect(() => {
+    const obj: Record<string, string> = {};
+    Object.entries(params).forEach(([k, v]) => {
+      obj[k] = v != null ? String(v) : '';
+    });
+    setDraft(obj);
+  }, [type, isVisible]);
+
   if (!isVisible) return null;
+
+  const plugin = registry[type];
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -37,11 +40,30 @@ const SettingsSheet: React.FC<Props> = ({
     borderRadius: 8,
   };
 
+  const onNumChange = (k: string) => (e: ChangeEvent<HTMLInputElement>) => {
+    setDraft((d) => ({ ...d, [k]: e.target.value }));
+  };
+
+  const commitField = (k: string) => {
+    const raw = draft[k];
+    if (raw === '') return; // 空字符串不提交
+    const num = Number(raw);
+    if (!Number.isNaN(num)) setParams({ [k]: num });
+  };
+
+  const commitAllAndClose = () => {
+    Object.entries(draft).forEach(([k, v]) => {
+      const n = Number(v);
+      if (!Number.isNaN(n)) setParams({ [k]: n });
+    });
+    onClose();
+  };
+
   const wrapLabel = (
     label: string,
     value: string,
     onChange: (e: ChangeEvent<HTMLInputElement>) => void,
-    step?: string
+    step?: number
   ) => (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
       {label}
@@ -49,6 +71,7 @@ const SettingsSheet: React.FC<Props> = ({
         type="number"
         value={value}
         onChange={onChange}
+        onBlur={() => commitField(label)}
         step={step}
         style={inputStyle}
       />
@@ -66,7 +89,7 @@ const SettingsSheet: React.FC<Props> = ({
         background: 'rgba(0,0,0,0.4)',
         zIndex: 2000,
       }}
-      onClick={onCancel}
+      onClick={onClose}
     >
       {/* 抽屉内容 */}
       <div
@@ -89,39 +112,53 @@ const SettingsSheet: React.FC<Props> = ({
       >
         <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>航线设置</div>
 
-        {wrapLabel('角度 (°M)', courseAxis, (e) => setCourseAxis(e.target.value))}
-        {wrapLabel('距离 (NM)', courseSizeNm, (e) => setCourseSizeNm(e.target.value), '0.1')}
-        {wrapLabel('起航线长度 (m)', startLineLenM, (e) => setStartLineLenM(e.target.value))}
+        {/* 航线类型切换 */}
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
+          航线类型
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as CourseTypeId)}
+            style={{ ...inputStyle, padding: 10 }}
+          >
+            {allCoursePlugins.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={onCancel}
-            style={{
-              flex: 1,
-              padding: 12,
-              background: '#eee',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 16,
-            }}
-          >
-            取消
-          </button>
-          <button
-            onClick={onSave}
-            style={{
-              flex: 1,
-              padding: 12,
-              background: '#ff7f0e',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 16,
-            }}
-          >
-            保存
-          </button>
-        </div>
+        {/* 参数输入表单 */}
+        {plugin.SettingsPanel ? (
+          <plugin.SettingsPanel params={params} setParams={setParams} />
+        ) : (
+          Object.entries(plugin.paramSchema).map(([k, cfg]: any) =>
+            React.cloneElement(
+              wrapLabel(
+                cfg.label ?? k,
+                draft[k] ?? String(params[k] ?? ''),
+                onNumChange(k),
+                cfg.step
+              ),
+              { key: k }
+            )
+          )
+        )}
+
+        <button
+          onClick={commitAllAndClose}
+          style={{
+            marginTop: 12,
+            padding: 12,
+            background: '#ff7f0e',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 16,
+          }}
+        >
+          关闭
+        </button>
       </div>
     </div>
   );

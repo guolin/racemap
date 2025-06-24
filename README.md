@@ -190,3 +190,33 @@ node mock.js
 * 单文件 ≤300 行，超出请拆分（见 ESLint 规则）。
 * 新增副作用逻辑优先写成自定义 Hook。
 * UI 元素放到 `src/features/map/components/`，保持职责单一。
+
+## Course Plugin Architecture (v2)
+
+The map now supports multiple course types via a pluggable architecture.
+
+Directory: `src/features/course/plugins`
+
+Each plugin implements `CoursePlugin` interface (see `CoursePlugin.ts`):
+- `id`, `name` – identity and UI display.
+- `paramSchema` – describes dynamic params for auto-generated settings form.
+- `defaultParams` – sensible defaults.
+- `draw(map, origin, params)` – render the course on Leaflet map.
+- (optional) `SettingsPanel` – custom React form.
+
+`registry.ts` exports all plugins and `CourseTypeId` union.
+`useCourseStore` keeps `{type, params}` in zustand (persisted, with migration from legacy axis/distanceNm/startLineM).
+
+`useCourseDraw` looks up plugin by `type` and delegates drawing.
+`SettingsSheet` renders a generic form based on `paramSchema` and lets user switch course types.
+
+MQTT payload now embeds course type & params:
+```json
+{
+  "lat": 39.9,
+  "lng": 116.4,
+  "course": { "type": "simple", "params": { "axis": 40, "distanceNm": 0.9, "startLineM": 100 } }
+}
+```
+
+Adding a new course → just create `plugins/xyz.ts` and register it.

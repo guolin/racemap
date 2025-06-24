@@ -7,12 +7,12 @@ interface Options {
   isAdmin: boolean;
   /** 最新信号船位置，用于管理员发布 */
   getLatestPos: () => L.LatLng | null;
-  /** 航线参数字符串，用于发布：axis, distance_nm, start_line_m */
-  getCourseParams: () => { axis: string; distance_nm: string; start_line_m: string };
+  /** 获取航线数据，用于发布 */
+  getCourseData: () => { type: string; params: Record<string, any> };
   /** 收到管理员位置后回调（观察者端） */
   onRecvPos?: (pos: L.LatLng) => void;
-  /** 收到航线参数后回调 */
-  onRecvCourse?: (p: { axis: number; distance_nm: number; start_line_m: number }) => void;
+  /** 收到航线数据后回调 */
+  onRecvCourse?: (c: { type: string; params: Record<string, any> }) => void;
 }
 
 const posTopic = (id: string) => `sailing/${id}/pos`;
@@ -22,17 +22,17 @@ const posTopic = (id: string) => `sailing/${id}/pos`;
  * - 管理员：每 30s retain 发布一次位置 + 航线参数
  * - 观察者：订阅管理员位置，回调 onRecvPos & onRecvCourse
  */
-export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseParams, onRecvPos, onRecvCourse }: Options) {
+export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData, onRecvPos, onRecvCourse }: Options) {
   const client = useMqttClient();
   const publishTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastPayloadRef = useRef<string | null>(null);
   const getLatestPosRef = useRef(getLatestPos);
-  const getCourseParamsRef = useRef(getCourseParams);
+  const getCourseDataRef = useRef(getCourseData);
   const onRecvPosRef = useRef(onRecvPos);
   const onRecvCourseRef = useRef(onRecvCourse);
 
   getLatestPosRef.current = getLatestPos;
-  getCourseParamsRef.current = getCourseParams;
+  getCourseDataRef.current = getCourseData;
   onRecvPosRef.current = onRecvPos;
   onRecvCourseRef.current = onRecvCourse;
 
@@ -73,14 +73,14 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseParam
         console.debug('[MQTT] Skip publishing, no position available');
         return;
       }
-      const { axis, distance_nm, start_line_m } = getCourseParamsRef.current();
+      const { type, params } = getCourseDataRef.current();
       const common = {
         id: 'ADMIN',
         lat: pos.lat,
         lng: pos.lng,
-        course: { axis: Number(axis), distance_nm: Number(distance_nm), start_line_m: Number(start_line_m) },
+        course: { type, params },
       };
-      const dedupKey = JSON.stringify(common);
+      const dedupKey = JSON.stringify(common.course);
 
       // 去重：如果位置 / 航线参数均未变化，则不再发送
       if (dedupKey === lastPayloadRef.current) {
@@ -124,4 +124,24 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseParam
       }
     };
   }, [courseId, isAdmin, client]);
+
+  // exposed manual publish function (admin only)
+  const publishNow = () => {
+    if (!isAdmin) return;
+    if (!client) return;
+    const pos = getLatestPosRef.current();
+    if (!pos) return;
+    const { type, params } = getCourseDataRef.current();
+    const payloadStr = JSON.stringify({
+      id: 'ADMIN',
+      lat: pos.lat,
+      lng: pos.lng,
+      timestamp: Date.now(),
+      course: { type, params },
+    });
+    client.publish(posTopic(courseId), payloadStr, { retain: true, qos: 1 });
+    lastPayloadRef.current = JSON.stringify({ type, params });
+  };
+
+  return publishNow;
 } 

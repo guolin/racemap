@@ -40,37 +40,38 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     setDistanceNm,
     setStartLineM,
   } = useCourseStore();
-  const [courseAxis, setCourseAxis] = useState(String(courseAxisNum));
-  const [courseSizeNm, setCourseSizeNm] = useState(String(courseSizeNmNum));
-  const [startLineLenM, setStartLineLenM] = useState(String(startLineLenMNum));
+  // 仅用于 compass toggle: 直接取 store 值
+  const courseAxis = courseAxisNum;
 
   // ---- Hooks ----
   useDeviceOrientation(); // currently unused but can be hooked to mapBearing if needed
   const gps = useGpsWatch({});
   // signal船（origin）坐标（从 MQTT 获取）
   const [origin, setOrigin] = useState<L.LatLng | null>(null);
-  const { redraw } = useCourseDraw(mapRef, {
-    axis: Number(courseAxisNum),
-    distanceNm: Number(courseSizeNmNum),
-    startLineM: Number(startLineLenMNum),
-  });
+  const { redraw } = useCourseDraw(mapRef);
 
   // mqtt sync
   const lastPosRef = useRef<L.LatLng | null>(null);
   if (gps.latLng) lastPosRef.current = gps.latLng;
-  useMqttPosSync({
+  const type = useCourseStore((s)=>s.type);
+  const params = useCourseStore((s)=>s.params);
+  const setType = useCourseStore((s)=>s.setType);
+  const setParams = useCourseStore((s)=>s.setParams);
+
+  const publishNow = useMqttPosSync({
     courseId,
     isAdmin,
     getLatestPos: () => lastPosRef.current,
-    getCourseParams: () => ({ axis: String(courseAxisNum), distance_nm: String(courseSizeNmNum), start_line_m: String(startLineLenMNum) }),
+    getCourseData: () => ({ type, params }),
     onRecvPos: (p) => {
       if (!isAdmin) {
         setOrigin(p);
         redraw(p);
       }
     },
-    onRecvCourse: (p) => {
-      setAxis(p.axis); setDistanceNm(p.distance_nm); setStartLineM(p.start_line_m);
+    onRecvCourse: (c) => {
+      setType(c.type);
+      setParams(c.params);
     }
   });
 
@@ -144,11 +145,11 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
 
   // ---- Settings ----
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const saveSettings = () => {
+  const closeSettings = () => {
     setSettingsVisible(false);
-    const a = Number(courseAxis); const d = Number(courseSizeNm); const s = Number(startLineLenM);
-    if (!Number.isNaN(a)) setAxis(a); if (!Number.isNaN(d)) setDistanceNm(d); if (!Number.isNaN(s)) setStartLineM(s);
-    if (lastPosRef.current) redraw(lastPosRef.current);
+    // redraw based on latest params if origin exists
+    if (origin) redraw(origin);
+    if (publishNow) publishNow();
   };
 
   // admin redraw on gps
@@ -175,9 +176,9 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
           mapRef.current.panTo(gps.latLng, { animate: true });
         }
       }} onSettings={() => setSettingsVisible(true)} />
-      <SettingsSheet isVisible={isAdmin && settingsVisible} courseAxis={courseAxis} courseSizeNm={courseSizeNm} startLineLenM={startLineLenM} setCourseAxis={setCourseAxis} setCourseSizeNm={setCourseSizeNm} setStartLineLenM={setStartLineLenM} onCancel={() => setSettingsVisible(false)} onSave={saveSettings} />
+      <SettingsSheet isVisible={isAdmin && settingsVisible} onClose={closeSettings} />
       <ErrorBanner message={gps.errorMsg} />
-      <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = Number(courseAxis)||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
+      <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = courseAxis||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
       <div style={{ position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)', display:'flex', gap:12, zIndex:1000 }}>
         <InfoCard title="COURSE AXIS" value={`${courseAxisNum}°M`} />
         <InfoCard title="COURSE SIZE" value={`${courseSizeNmNum}NM`} />
