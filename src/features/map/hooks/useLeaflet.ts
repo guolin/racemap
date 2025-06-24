@@ -16,7 +16,8 @@ export function useLeafletMap(containerId: string) {
     // Create map
     const map = L.map(containerId, {
       zoomControl: false,
-    });
+      rotate: true,
+    } as L.MapOptions & { rotate: boolean });
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
       {

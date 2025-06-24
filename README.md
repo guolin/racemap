@@ -173,3 +173,20 @@ node mock.js
 2. 运行 *Mock Publisher* (TODO) 向指定 Topic 发布随机坐标。
 
 ---
+
+## 地图模块重构 (2024-xx-xx)
+
+项目已完成地图组件重构：
+
+1. `LegacyMap.tsx` 已删除，核心逻辑拆分为 Hooks + UI 组件。
+2. 主要文件
+   * `src/features/map/RaceMap.tsx` – 新版主组件，组合所有 Hooks / 组件。
+   * Hooks：`useLeafletMap` / `useDeviceOrientation` / `useGpsWatch` / `useMqttPosSync` / `useCourseDraw`。
+   * UI：`TopBar` `SideToolbar` `CompassButton` `SettingsSheet` `ErrorBanner` `GpsPanel`。
+3. Admin / Observer 功能保持不变，代码规模整体下降 ~50%，更易维护。
+
+开发时建议遵循：
+
+* 单文件 ≤300 行，超出请拆分（见 ESLint 规则）。
+* 新增副作用逻辑优先写成自定义 Hook。
+* UI 元素放到 `src/features/map/components/`，保持职责单一。
