@@ -47,6 +47,8 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // ---- Hooks ----
   useDeviceOrientation(); // currently unused but can be hooked to mapBearing if needed
   const gps = useGpsWatch({});
+  // signal船（origin）坐标（从 MQTT 获取）
+  const [origin, setOrigin] = useState<L.LatLng | null>(null);
   const { redraw } = useCourseDraw(mapRef, {
     axis: Number(courseAxisNum),
     distanceNm: Number(courseSizeNmNum),
@@ -61,7 +63,12 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     isAdmin,
     getLatestPos: () => lastPosRef.current,
     getCourseParams: () => ({ axis: String(courseAxisNum), distance_nm: String(courseSizeNmNum), start_line_m: String(startLineLenMNum) }),
-    onRecvPos: (p) => !isAdmin && redraw(p),
+    onRecvPos: (p) => {
+      if (!isAdmin) {
+        setOrigin(p);
+        redraw(p);
+      }
+    },
     onRecvCourse: (p) => {
       setAxis(p.axis); setDistanceNm(p.distance_nm); setStartLineM(p.start_line_m);
     }
@@ -107,11 +114,23 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // ---- auto center ----
   const centeredRef = useRef(false);
   useEffect(() => {
-    if (!gps.latLng || !mapRef.current) return;
+    if (!mapRef.current) return;
     const map = mapRef.current;
-    if (!centeredRef.current) { map.setView(gps.latLng, 15); centeredRef.current = true; }
-    else if (!map.getBounds().pad(-0.2).contains(gps.latLng)) map.panTo(gps.latLng);
-  }, [gps.latLng]);
+
+    if (gps.latLng) {
+      // 有本地 GPS，优先居中到本地位置
+      if (!centeredRef.current) {
+        map.setView(gps.latLng, 15);
+        centeredRef.current = true;
+      } else if (!map.getBounds().pad(-0.2).contains(gps.latLng)) {
+        map.panTo(gps.latLng);
+      }
+    } else if (origin && !centeredRef.current) {
+      // 尚无 GPS，但拿到了 signal船坐标
+      map.setView(origin, 15);
+      centeredRef.current = true;
+    }
+  }, [gps.latLng, origin]);
 
   // tooltip state for observer panel
   const [gpsTipVisible, setGpsTipVisible] = useState(false);
