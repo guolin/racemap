@@ -6,8 +6,6 @@ interface Props {
   isAdmin: boolean;
   /** 点击🚤按钮执行：手动获取并定位当前位置 */
   onLocate?: () => void;
-  /** 点击🗺️按钮执行：预留（如切换地图图层），可选 */
-  onMap?: () => void;
   /** 点击⚙️按钮执行：打开设置面板（仅管理员） */
   onSettings?: () => void;
 }
@@ -23,7 +21,7 @@ const btnStyle: React.CSSProperties = {
   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
 };
 
-const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onMap, onSettings }) => {
+const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings }) => {
   return (
     <div
       style={{
@@ -36,10 +34,13 @@ const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onMap, onSettings }) 
         zIndex: 1000,
       }}
     >
-      <button style={btnStyle} title="定位到当前位置" onClick={onLocate}>🚤</button>
-      <button style={btnStyle} onClick={onMap}>🗺️</button>
+      <button style={btnStyle} title="定位到当前位置" onClick={onLocate}>
+        <img src="/icons/locate.svg" alt="定位" style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+      </button>
       {isAdmin && (
-        <button style={btnStyle} onClick={onSettings}>⚙️</button>
+        <button style={btnStyle} onClick={onSettings} title="设置">
+          <img src="/icons/setting.svg" alt="设置" style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+        </button>
       )}
     </div>
   );

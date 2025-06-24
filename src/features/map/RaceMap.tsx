@@ -108,6 +108,16 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     else if (!map.getBounds().pad(-0.2).contains(gps.latLng)) map.panTo(gps.latLng);
   }, [gps.latLng]);
 
+  // tooltip state for observer panel
+  const [gpsTipVisible, setGpsTipVisible] = useState(false);
+  const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
+
+  useEffect(() => {
+    if (gps.latLng) {
+      setLastGpsInfo({ lat: gps.latLng.lat, lng: gps.latLng.lng, ts: Date.now() });
+    }
+  }, [gps.latLng]);
+
   // ---- Settings ----
   const [settingsVisible, setSettingsVisible] = useState(false);
   const saveSettings = () => {
@@ -126,10 +136,16 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       <TopBar title={courseId} onlineCount={1} />
       {!isAdmin && (
         <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>
-          <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} />
+          <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} onClick={() => setGpsTipVisible(v=>!v)} />
+          {gpsTipVisible && lastGpsInfo && (
+            <div style={{ marginTop: 4, fontSize: 10, lineHeight: 1.3, textAlign: 'center', background:'rgba(255,255,255,0.9)', padding:'4px 6px', borderRadius:4 }}>
+              {new Date(lastGpsInfo.ts).toLocaleTimeString()}<br />
+              {lastGpsInfo.lat.toFixed(5)}, {lastGpsInfo.lng.toFixed(5)}
+            </div>
+          )}
         </div>
       )}
-      <SideToolbar isAdmin={isAdmin} onLocate={() => { if (gps.latLng && mapRef.current) mapRef.current.setView(gps.latLng, 15); }} onMap={() => {}} onSettings={() => setSettingsVisible(true)} />
+      <SideToolbar isAdmin={isAdmin} onLocate={() => { if (gps.latLng && mapRef.current) mapRef.current.setView(gps.latLng, 15); }} onSettings={() => setSettingsVisible(true)} />
       <SettingsSheet isVisible={isAdmin && settingsVisible} courseAxis={courseAxis} courseSizeNm={courseSizeNm} startLineLenM={startLineLenM} setCourseAxis={setCourseAxis} setCourseSizeNm={setCourseSizeNm} setStartLineLenM={setStartLineLenM} onCancel={() => setSettingsVisible(false)} onSave={saveSettings} />
       <ErrorBanner message={gps.errorMsg} />
       <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = Number(courseAxis)||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
