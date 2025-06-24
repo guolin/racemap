@@ -27,6 +27,9 @@ const routeTopic = (id: string) => `sailing/${id}/route`;
 if (typeof window !== 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   require('leaflet-rotate');
+  // 旋转 Marker 插件，用于 setRotationAngle
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('leaflet-rotatedmarker');
 }
 
 const MapView = ({ courseId, isAdmin = false }: MapProps) => {
@@ -82,7 +85,6 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
     const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
     const lastGpsTsRef = useRef<number>(0);
 
-    const myIconElRef = useRef<HTMLDivElement | null>(null);
     const myDirRef = useRef<number>(0);
 
     // 在现有 hooks 定义后插入 headingRef，用于跨 effect 读取
@@ -110,10 +112,10 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
       [courseAxisNum, courseSizeNmNum, startLineLenMNum]
     );
 
-    // helper to create heading icon
-    const createHeadingIcon = (angle: number) => {
+    // 始终朝上（北）的箭头，由插件负责整体旋转
+    const createHeadingIcon = () => {
       const size = 28;
-      const html = `<div style=\"width:${size}px;height:${size}px;transform:rotate(${angle}deg);transition:transform .2s;font-size:0;\"><svg viewBox='0 0 100 100' width='${size}' height='${size}' style='display:block'><polygon points='50,10 85,90 50,70 15,90' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
+      const html = `<div style=\"width:${size}px;height:${size}px;font-size:0;\"><svg viewBox='0 0 100 100' width='${size}' height='${size}' style='display:block'><polygon points='50,10 85,90 50,70 15,90' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
       return L.divIcon({ html, className: 'my-boat-icon', iconSize: [size, size], iconAnchor: [size/2, size] });
     };
 
@@ -263,19 +265,20 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                 const DIR_THRESHOLD = 2; // deg
                 if (!myMarkerRef.current && mapRef.current) {
                   console.debug('[OBS] creating myMarker');
-                  const displayDir = ((dir - mapBearing) % 360 + 360) % 360;
+                  const displayDir = ((mapBearing - dir) % 360 + 360) % 360;
                   myMarkerRef.current = L.marker(latlng, {
-                    icon: createHeadingIcon(displayDir),
+                    icon: createHeadingIcon(),
+                    rotationAngle: displayDir,
+                    rotationOrigin: 'center center',
                     zIndexOffset: 500,
-                  }).addTo(mapRef.current);
-                  myIconElRef.current = myMarkerRef.current.getElement() as HTMLDivElement;
+                  } as any).addTo(mapRef.current);
                   myDirRef.current = dir;
                 } else if (myMarkerRef.current) {
                   // 只更新位置；方向变化显著时再旋转现有图标，减少闪烁
                   myMarkerRef.current.setLatLng(latlng);
-                  if (Math.abs(dir - myDirRef.current) > DIR_THRESHOLD && myIconElRef.current) {
-                    const displayDir = ((dir - mapBearing) % 360 + 360) % 360;
-                    myIconElRef.current.style.transform = `rotate(${displayDir}deg)`;
+                  if (Math.abs(dir - myDirRef.current) > DIR_THRESHOLD) {
+                    const displayDir = ((mapBearing - dir) % 360 + 360) % 360;
+                    (myMarkerRef.current as any).setRotationAngle(displayDir);
                     myDirRef.current = dir;
                   }
                 }
@@ -493,9 +496,9 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
   // 添加 effect：当地图旋转时更新箭头方向
   // 当地图 bearing 变化，更新观察者箭头方向
   useEffect(() => {
-    if (myIconElRef.current && myDirRef.current != null) {
-      const displayDir = ((myDirRef.current - mapBearing) % 360 + 360) % 360;
-      myIconElRef.current.style.transform = `rotate(${displayDir}deg)`;
+    if (myMarkerRef.current && myDirRef.current != null) {
+      const displayDir = ((mapBearing - myDirRef.current) % 360 + 360) % 360;
+      (myMarkerRef.current as any).setRotationAngle(displayDir);
     }
   }, [mapBearing]);
 
@@ -637,18 +640,19 @@ const MapView = ({ courseId, isAdmin = false }: MapProps) => {
                   // 更新观察者自己的标记
                   if (!isAdmin) {
                     if (!myMarkerRef.current && mapRef.current) {
-                      const displayDir = ((dir - mapBearing) % 360 + 360) % 360;
+                      const displayDir = ((mapBearing - dir) % 360 + 360) % 360;
                       myMarkerRef.current = L.marker(latlng, {
-                        icon: createHeadingIcon(displayDir),
+                        icon: createHeadingIcon(),
+                        rotationAngle: displayDir,
+                        rotationOrigin: 'center center',
                         zIndexOffset: 500,
-                      }).addTo(mapRef.current);
-                      myIconElRef.current = myMarkerRef.current.getElement() as HTMLDivElement;
+                      } as any).addTo(mapRef.current);
                       myDirRef.current = dir;
                     } else if (myMarkerRef.current) {
                       myMarkerRef.current.setLatLng(latlng);
-                      if (Math.abs(dir - myDirRef.current) > 2 && myIconElRef.current) {
-                        const displayDir = ((dir - mapBearing) % 360 + 360) % 360;
-                        myIconElRef.current.style.transform = `rotate(${displayDir}deg)`;
+                      if (Math.abs(dir - myDirRef.current) > 2) {
+                        const displayDir = ((mapBearing - dir) % 360 + 360) % 360;
+                        (myMarkerRef.current as any).setRotationAngle(displayDir);
                         myDirRef.current = dir;
                       }
                     }
