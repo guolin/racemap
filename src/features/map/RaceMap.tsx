@@ -123,7 +123,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       if (!centeredRef.current) {
         map.setView(gps.latLng, 15);
         centeredRef.current = true;
-      } else if (!map.getBounds().pad(-0.2).contains(gps.latLng)) {
+      } else if (!isAdmin && !map.getBounds().pad(-0.2).contains(gps.latLng)) {
         map.panTo(gps.latLng);
       }
     } else if (origin && !centeredRef.current) {
@@ -131,7 +131,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       map.setView(origin, 15);
       centeredRef.current = true;
     }
-  }, [gps.latLng, origin]);
+  }, [gps.latLng, origin, isAdmin]);
 
   // tooltip state for observer panel
   const [gpsTipVisible, setGpsTipVisible] = useState(false);
