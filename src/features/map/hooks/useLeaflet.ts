@@ -19,13 +19,14 @@ export function useLeafletMap(containerId: string) {
       rotate: true,
     } as L.MapOptions & { rotate: boolean });
     L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
       {
         attribution: '©OpenStreetMap, ©CartoDB',
         subdomains: 'abcd',
         maxZoom: 19,
         noWrap: true,
         crossOrigin: true,
+        detectRetina: true,
       }
     ).addTo(map);
     map.setView([39.9042, 116.4074], 12);
