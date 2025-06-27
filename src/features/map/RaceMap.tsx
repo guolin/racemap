@@ -156,7 +156,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   if (isAdmin && gps.latLng) redraw(gps.latLng);
 
   return (
-    <div className="relative w-screen h-screen-safe">
+    <div className="relative w-screen h-screen">
       <div id="map-root" className="w-full h-full" />
       <TopBar title={courseId} onlineCount={1} />
       {!isAdmin && (

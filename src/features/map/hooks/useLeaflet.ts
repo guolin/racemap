@@ -25,7 +25,7 @@ export function useLeafletMap(containerId: string) {
         subdomains: 'abcd',
         maxZoom: 19,
         noWrap: true,
-        crossOrigin: true,
+        // crossOrigin removed to improve compatibility on iOS Safari
         detectRetina: true,
       }
     ).addTo(map);
