@@ -74,6 +74,12 @@ export default function Home() {
         >
           {myId ? `进入我的比赛（${myId}）` : '进入我的比赛'}
         </button>
+        <button
+          style={{ ...btnStyle, width: '100%', background: '#4caf50', color: '#fff' }}
+          onClick={() => window.open('/timer', '_blank')}
+        >
+          Timer 计时器
+        </button>
       </div>
     </main>
   );
