@@ -39,10 +39,7 @@ const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings, onInfo })
       <button style={btnStyle} title="定位到当前位置" onClick={onLocate}>
         <img src="/icons/locate.svg" alt="定位" style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
       </button>
-      <button style={btnStyle} title="坐标信息" onClick={() => {
-        console.log('Info button clicked');
-        onInfo?.();
-      }}>
+      <button style={btnStyle} title="坐标信息" onClick={onInfo}>
         <img src="/icons/information.svg" alt="信息" style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
       </button>
       {isAdmin && (

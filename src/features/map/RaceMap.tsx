@@ -164,14 +164,6 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     }
   }, [isAdmin, gps.latLng, redraw]);
 
-  // 调试信息
-  console.log('RaceMap render:', {
-    coordinatesDialogVisible,
-    origin: origin ? `${origin.lat}, ${origin.lng}` : 'null',
-    courseType: type,
-    courseParams: params
-  });
-
   // ---- UI ----
 
   return (

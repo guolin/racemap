@@ -23,7 +23,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
   courseType, 
   courseParams 
 }) => {
-  console.log('CoordinatesDialog render:', { isVisible, origin, courseType, courseParams });
+  // (debug logs removed)
   
   if (!isVisible) return null;
 
@@ -115,6 +115,23 @@ export const CoordinatesDialog: React.FC<Props> = ({
 
   const coordinatePoints = getCoordinatePoints();
 
+  // 格式化坐标为 "XX° YY.YYYY'"
+  const fmtLat = (v: number) => {
+    const abs = Math.abs(v);
+    const deg = Math.floor(abs);
+    const minutes = (abs - deg) * 60;
+    const dir = v >= 0 ? 'N' : 'S';
+    return `${deg}° ${minutes.toFixed(4)}' ${dir}`;
+  };
+
+  const fmtLng = (v: number) => {
+    const abs = Math.abs(v);
+    const deg = Math.floor(abs);
+    const minutes = (abs - deg) * 60;
+    const dir = v >= 0 ? 'E' : 'W';
+    return `${deg}° ${minutes.toFixed(4)}' ${dir}`;
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
       <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -134,7 +151,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
               <div key={index} className="border-b border-gray-200 pb-2">
                 <div className="font-medium text-gray-800">{point.name}</div>
                 <div className="text-sm text-gray-600 font-mono">
-                  {point.lat.toFixed(6)}, {point.lng.toFixed(6)}
+                  {fmtLat(point.lat)}, {fmtLng(point.lng)}
                 </div>
               </div>
             ))
