@@ -8,6 +8,8 @@ interface Props {
   onLocate?: () => void;
   /** 点击⚙️按钮执行：打开设置面板（仅管理员） */
   onSettings?: () => void;
+  /** 点击ℹ️按钮执行：打开坐标信息对话框 */
+  onInfo?: () => void;
 }
 
 const btnStyle: React.CSSProperties = {
@@ -21,7 +23,7 @@ const btnStyle: React.CSSProperties = {
   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
 };
 
-const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings }) => {
+const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings, onInfo }) => {
   return (
     <div
       style={{
@@ -36,6 +38,12 @@ const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings }) => {
     >
       <button style={btnStyle} title="定位到当前位置" onClick={onLocate}>
         <img src="/icons/locate.svg" alt="定位" style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+      </button>
+      <button style={btnStyle} title="坐标信息" onClick={() => {
+        console.log('Info button clicked');
+        onInfo?.();
+      }}>
+        <img src="/icons/information.svg" alt="信息" style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
       </button>
       {isAdmin && (
         <button style={btnStyle} onClick={onSettings} title="设置">

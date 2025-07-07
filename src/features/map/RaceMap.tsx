@@ -22,6 +22,7 @@ import ErrorBanner from '@features/map/components/ErrorBanner';
 import { GpsPanel } from '@features/map/components/GpsPanel';
 import CompassButton from '@features/map/components/CompassButton';
 import { InfoCard } from '@shared/ui/InfoCard';
+import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
 
 interface Props {
   courseId: string;
@@ -152,8 +153,26 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     if (publishNow) publishNow();
   };
 
-  // admin redraw on gps
-  if (isAdmin && gps.latLng) redraw(gps.latLng);
+  // ---- Coordinates Info ----
+  const [coordinatesDialogVisible, setCoordinatesDialogVisible] = useState(false);
+  
+  // admin: 当 gps 更新时，更新 origin 并重绘航线
+  useEffect(() => {
+    if (isAdmin && gps.latLng) {
+      setOrigin(gps.latLng);
+      redraw(gps.latLng);
+    }
+  }, [isAdmin, gps.latLng, redraw]);
+
+  // 调试信息
+  console.log('RaceMap render:', {
+    coordinatesDialogVisible,
+    origin: origin ? `${origin.lat}, ${origin.lng}` : 'null',
+    courseType: type,
+    courseParams: params
+  });
+
+  // ---- UI ----
 
   return (
     <div className="relative w-screen h-screen">
@@ -175,8 +194,15 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
           // 平滑地移动到用户位置，但保持当前缩放级别
           mapRef.current.panTo(gps.latLng, { animate: true });
         }
-      }} onSettings={() => setSettingsVisible(true)} />
+      }} onSettings={() => setSettingsVisible(true)} onInfo={() => setCoordinatesDialogVisible(true)} />
       <SettingsSheet isVisible={isAdmin && settingsVisible} onClose={closeSettings} />
+      <CoordinatesDialog 
+        isVisible={coordinatesDialogVisible}
+        onClose={() => setCoordinatesDialogVisible(false)}
+        origin={origin}
+        courseType={type}
+        courseParams={params}
+      />
       <ErrorBanner message={gps.errorMsg} />
       <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = courseAxis||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
       <div style={{ position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)', display:'flex', gap:12, zIndex:1000 }}>
