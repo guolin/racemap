@@ -33,6 +33,8 @@ export function getMqttClient(): MqttClient {
     clientId: `rc_${Math.random().toString(16).slice(2, 10)}`,
     username: process.env.NEXT_PUBLIC_MQTT_USERNAME,
     password: process.env.NEXT_PUBLIC_MQTT_PASSWORD,
+    /** 使用 MQTT v5 以支持 messageExpiryInterval 属性 */
+    protocolVersion: 5,
   };
 
   client = mqtt.connect(url, options);
@@ -67,4 +69,43 @@ export function getMqttClient(): MqttClient {
   }) as any;
 
   return c;
+}
+
+// ---------------------------------------------------------------------------
+// Observer Position Publishing
+// ---------------------------------------------------------------------------
+
+export interface ObserverPosition {
+  lat: number;
+  lng: number;
+  heading?: number | null;
+}
+
+/**
+ * Publish current observer position to MQTT with retain + 5 min TTL.
+ * Topic: race/{raceId}/location/observer/{observerId}
+ *
+ * @param raceId      6-char room code (Base36)
+ * @param observerId  unique id of this client
+ * @param pos         position data (lat/lng/heading)
+ */
+export function publishObserverPos(
+  raceId: string,
+  observerId: string,
+  pos: ObserverPosition,
+) {
+  const c = getMqttClient();
+  if (!c || !c.connected) return;
+
+  const topic = `race/${raceId}/location/observer/${observerId}`;
+  const payload = JSON.stringify({ ...pos, ts: Date.now() });
+
+  c.publish(topic, payload, {
+    qos: 0,
+    retain: true,
+    properties: {
+      // MQTT v5 – expire retained message after 5 minutes (300 s)
+      messageExpiryInterval: 300,
+    },
+  });
 } 

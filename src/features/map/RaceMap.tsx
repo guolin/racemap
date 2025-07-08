@@ -23,6 +23,9 @@ import { GpsPanel } from '@features/map/components/GpsPanel';
 import CompassButton from '@features/map/components/CompassButton';
 import { InfoCard } from '@shared/ui/InfoCard';
 import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
+import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublish';
+import { useObserversPos } from '@features/mqtt/hooks/useObserversPos';
+import { ObserversLayer } from '@features/map/components/ObserversLayer';
 
 interface Props {
   courseId: string;
@@ -35,7 +38,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // ---- Course params ----
   const {
     axis: courseAxisNum,
-    distanceNm: courseSizeNmNum,
+    distanceNm: courseSizeNm,
     startLineM: startLineLenMNum,
     setAxis,
     setDistanceNm,
@@ -164,12 +167,40 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     }
   }, [isAdmin, gps.latLng, redraw]);
 
+  // ---- Observer position sync ----
+  const observerIdRef = useRef<string>('');
+  if (observerIdRef.current === '') {
+    const key = 'observerId';
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+    observerIdRef.current = saved ?? Math.random().toString(36).slice(2, 8).toUpperCase();
+    if (!saved && typeof window !== 'undefined') localStorage.setItem(key, observerIdRef.current);
+  }
+
+  // Publish my position if NOT admin
+  if (!isAdmin) {
+    useObserverPosPublish({
+      raceId: courseId,
+      observerId: observerIdRef.current,
+      getLatestPos: () => (gps.latLng ? { lat: gps.latLng.lat, lng: gps.latLng.lng, heading: gps.headingDeg } : null),
+    });
+  }
+
+  // Subscribe to all observers
+  const observersAll = useObserversPos(courseId);
+  const observers = observersAll.filter(o => o.id !== observerIdRef.current);
+
+  // 当管理员修改航线参数时，立即广播更新
+  useEffect(() => {
+    if (isAdmin && publishNow) publishNow();
+  }, [isAdmin, type, params, publishNow]);
+
   // ---- UI ----
 
   return (
     <div className="relative w-screen h-screen">
       <div id="map-root" className="w-full h-full" />
-      <TopBar title={courseId} onlineCount={1} />
+      <TopBar title={courseId} onlineCount={observers.length} />
+      <ObserversLayer observers={observers} map={mapRef.current} />
       {!isAdmin && (
         <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>
           <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} onClick={() => setGpsTipVisible(v=>!v)} />
@@ -199,7 +230,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = courseAxis||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
       <div style={{ position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)', display:'flex', gap:12, zIndex:1000 }}>
         <InfoCard title="COURSE AXIS" value={`${courseAxisNum}°M`} />
-        <InfoCard title="COURSE SIZE" value={`${courseSizeNmNum}NM`} />
+        <InfoCard title="COURSE SIZE" value={`${courseSizeNm}NM`} />
       </div>
     </div>
   );
