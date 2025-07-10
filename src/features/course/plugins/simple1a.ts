@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
 import { CoursePlugin } from './CoursePlugin';
+import { getCurrentLang } from 'src/locale';
 
 export interface Simple1aParams {
   axis: number;          // 航向 (°M)
@@ -20,7 +21,40 @@ const paramSchema = {
 
 export const simple1aPlugin: CoursePlugin<Simple1aParams> = {
   id: 'simple1a',
-  name: 'Simple + 1a',
+  i18n: {
+    zh: {
+      name: 'Simple + 1a',
+      labels: {
+        axis: '角度 (°M)',
+        distanceNm: '距离 (NM)',
+        startLineM: '起航线长度 (m)',
+        mark1AngleDeg: '1标夹角 (°)',
+        mark1aDist: '1a标距离 (m)'
+      },
+      tooltips: {
+        origin: '起航船',
+        startMark: '起航标',
+        mark1: '1 标',
+        mark1a: '1a 标'
+      }
+    },
+    en: {
+      name: 'Simple + 1a',
+      labels: {
+        axis: 'Angle (°M)',
+        distanceNm: 'Distance (NM)',
+        startLineM: 'Start line (m)',
+        mark1AngleDeg: 'Mark 1 angle (°)',
+        mark1aDist: 'Mark 1a distance (m)'
+      },
+      tooltips: {
+        origin: 'Signal boat',
+        startMark: 'Start mark',
+        mark1: 'Mark 1',
+        mark1a: 'Mark 1a'
+      }
+    }
+  },
   paramSchema,
   defaultParams: {
     axis: 40,
@@ -91,16 +125,18 @@ export const simple1aPlugin: CoursePlugin<Simple1aParams> = {
       fillOpacity: 1,
     };
 
-    const originMarker = L.circleMarker(origin, markStyle).bindTooltip('起航船');
-    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip('起航标');
-    const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip('1 标');
+    const lang = getCurrentLang();
+    const tooltips = simple1aPlugin.i18n![lang].tooltips;
+    const originMarker = L.circleMarker(origin, markStyle).bindTooltip(tooltips.origin);
+    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip(tooltips.startMark);
+    const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip(tooltips.mark1);
 
     const mark1aStyle: L.CircleMarkerOptions = {
       ...markStyle,
       color: '#d62728',
       fillColor: '#d62728',
     };
-    const mark1aMarker = L.circleMarker(mark1a as [number, number], mark1aStyle).bindTooltip('1a 标');
+    const mark1aMarker = L.circleMarker(mark1a as [number, number], mark1aStyle).bindTooltip(tooltips.mark1a);
 
     group.addLayer(startLine);
     group.addLayer(courseLine);

@@ -1,0 +1,74 @@
+"use client";
+
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import zh from './zh.json';
+import en from './en.json';
+
+export type Lang = 'zh' | 'en';
+
+// 将所有字典集中在一个映射中，便于按语言切换
+const dictionaries: Record<Lang, Record<string, string>> = {
+  zh: zh as Record<string, string>,
+  en: en as Record<string, string>,
+};
+
+interface LangContextValue {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (key: string) => string;
+}
+
+const LangContext = createContext<LangContextValue>({
+  lang: 'en',
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  setLang: () => {},
+  t: (k: string) => k,
+});
+
+let globalLang: Lang = 'en';
+export const getCurrentLang = () => globalLang;
+
+// ---------------- Provider ----------------
+export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const detectInitialLang = (): Lang => {
+    if (typeof window === 'undefined') return 'en';
+    const stored = localStorage.getItem('lang') as Lang | null;
+    if (stored === 'zh' || stored === 'en') return stored;
+    const zhLike = (navigator.languages || [navigator.language]).some((l) => l.toLowerCase().startsWith('zh'));
+    return zhLike ? 'zh' : 'en';
+  };
+
+  const [lang, setLang] = useState<Lang>(detectInitialLang);
+
+  // 把语言写入 localStorage，并同步到全局变量供非 React 场景使用
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lang', lang);
+    }
+    globalLang = lang;
+  }, [lang]);
+
+  const t = useMemo(() => {
+    const dict = dictionaries[lang];
+    return (key: string): string => dict[key] ?? key; // 缺失 key 时直接返回 key 方便排查
+  }, [lang]);
+
+  return <LangContext.Provider value={{ lang, setLang, t }}>{children}</LangContext.Provider>;
+};
+
+// ---------------- Hooks ----------------
+export const useLang = () => useContext(LangContext).lang;
+export const useSetLang = () => useContext(LangContext).setLang;
+export const useT = () => useContext(LangContext).t;
+
+// ---------------- Switcher ----------------
+export const LangSwitcher: React.FC<{ className?: string }> = ({ className }) => {
+  const lang = useLang();
+  const setLang = useSetLang();
+  const next = lang === 'zh' ? 'en' : 'zh';
+  return (
+    <button onClick={() => setLang(next)} className={className} aria-label="switch language">
+      {next === 'zh' ? '中文' : 'EN'}
+    </button>
+  );
+}; 

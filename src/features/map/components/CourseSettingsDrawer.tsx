@@ -1,9 +1,11 @@
 'use client';
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
+import { useT } from 'src/locale';
 import L from 'leaflet';
 import CompassButton from '@features/map/components/CompassButton';
 import { useCourseStore } from '@features/course/store';
 import { registry, allCoursePlugins, CourseTypeId } from '@features/course/plugins/registry';
+import { useLang } from 'src/locale';
 
 // Ensure leaflet rotate plugin available
 if (typeof window !== 'undefined') {
@@ -20,6 +22,7 @@ interface Props {
 }
 
 export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props) {
+  const t = useT();
   const [visible, setVisible] = useState(isOpen);
   const [animClass, setAnimClass] = useState(isOpen ? 'translate-x-0' : 'translate-x-full');
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -67,9 +70,9 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
         <button onClick={closeWithAnim} aria-label="Back" className="p-2 mr-4">
           ←
         </button>
-        <h1 className="text-lg font-semibold flex-1">航线设置</h1>
+        <h1 className="text-lg font-semibold flex-1">{t('common.course_settings')}</h1>
         <button onClick={handleSave} aria-label="Save" className="p-2 text-blue-600 font-medium">
-          保存
+          {t('common.save')}
         </button>
       </div>
 
@@ -89,6 +92,8 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
 }
 
 function CourseSettingsForm() {
+  const t = useT();
+  const lang = useLang();
   const type = useCourseStore((s) => s.type);
   const params = useCourseStore((s) => s.params);
   const setType = useCourseStore((s) => s.setType);
@@ -139,7 +144,7 @@ function CourseSettingsForm() {
     <div className="flex flex-col gap-6">
       {/* Type selector */}
       <label className="flex flex-col gap-2 text-sm">
-        航线类型
+        {t('common.course_type')}
         <select
           value={type}
           onChange={(e) => setType(e.target.value as CourseTypeId)}
@@ -147,7 +152,7 @@ function CourseSettingsForm() {
         >
           {allCoursePlugins.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {p.i18n?.[lang]?.name ?? p.name ?? p.id}
             </option>
           ))}
         </select>
@@ -161,7 +166,7 @@ function CourseSettingsForm() {
           const step = cfg.step ?? 1;
           return (
             <div key={k} className="flex items-center gap-3" style={{ fontSize: 14 }}>
-              <span className="flex-1 min-w-[6rem]">{cfg.label ?? k}</span>
+              <span className="flex-1 min-w-[6rem]">{plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k}</span>
               <button
                 onClick={() => adjust(k, -step)}
                 className="w-10 h-10 flex items-center justify-center rounded bg-gray-200 text-lg"

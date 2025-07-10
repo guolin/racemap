@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
 import { CoursePlugin } from './CoursePlugin';
+import { getCurrentLang } from 'src/locale';
 
 export interface OneFourParams {
   axis: number;       // degrees
@@ -20,7 +21,42 @@ const paramSchema = {
 
 export const oneFourPlugin: CoursePlugin<OneFourParams> = {
   id: 'oneFour',
-  name: '1-4 航向',
+  i18n: {
+    zh: {
+      name: '1-4 航向',
+      labels: {
+        axis: '角度 (°M)',
+        distanceNm: '距离 (NM)',
+        startLineM: '起航线长度 (m)',
+        mark4Width: '4 门宽度 (m)',
+        mark4Dist: '4 门距离起航线 (m)'
+      },
+      tooltips: {
+        origin: '起航船',
+        startMark: '起航标',
+        mark1: '1 标',
+        fourP: '4P',
+        fourS: '4S'
+      }
+    },
+    en: {
+      name: '1-4 Course',
+      labels: {
+        axis: 'Angle (°M)',
+        distanceNm: 'Distance (NM)',
+        startLineM: 'Start line (m)',
+        mark4Width: 'Gate width (m)',
+        mark4Dist: 'Gate distance (m)'
+      },
+      tooltips: {
+        origin: 'Signal boat',
+        startMark: 'Start mark',
+        mark1: 'Mark 1',
+        fourP: '4P',
+        fourS: '4S'
+      }
+    }
+  },
   paramSchema,
   defaultParams: {
     axis: 40,
@@ -76,11 +112,13 @@ export const oneFourPlugin: CoursePlugin<OneFourParams> = {
       fillOpacity: 1,
     };
 
-    const originMarker = L.circleMarker(origin, markStyle).bindTooltip('起航船');
-    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip('起航标');
-    const mark1Marker = L.circleMarker(mark1, markStyle).bindTooltip('1 标');
-    const fourPMarker = L.circleMarker(fourP, markStyle).bindTooltip('4P');
-    const fourSMarker = L.circleMarker(fourS, markStyle).bindTooltip('4S');
+    const lang = getCurrentLang();
+    const tooltips = oneFourPlugin.i18n![lang].tooltips;
+    const originMarker = L.circleMarker(origin, markStyle).bindTooltip(tooltips.origin);
+    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip(tooltips.startMark);
+    const mark1Marker = L.circleMarker(mark1, markStyle).bindTooltip(tooltips.mark1);
+    const fourPMarker = L.circleMarker(fourP, markStyle).bindTooltip(tooltips.fourP);
+    const fourSMarker = L.circleMarker(fourS, markStyle).bindTooltip(tooltips.fourS);
 
     g.addLayer(startLine);
     g.addLayer(courseLine);

@@ -1,11 +1,13 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useT, LangSwitcher } from 'src/locale';
 import { getMyRaceId } from '../utils/race';
 
 export default function Home() {
   const router = useRouter();
 
+  const t = useT();
   const [code, setCode] = useState('');
   const [myId, setMyId] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,11 +78,11 @@ export default function Home() {
 
       {/* Card */}
       <div className="w-full max-w-sm bg-bg-100 rounded-xl shadow-lg p-6 flex flex-col items-center gap-5">
-        <h1 className="text-2xl font-bold">帆船裁判工具</h1>
+        <h1 className="text-2xl font-bold">{t('home.title')}</h1>
 
         <input
           type="text"
-          placeholder="输入房间码"
+          placeholder={t('home.input_placeholder')}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           className="w-full px-4 py-3 rounded-md text-center text-lg text-text-100 focus:outline-none"
@@ -90,7 +92,7 @@ export default function Home() {
           className="w-full py-3 rounded-md bg-primary-100 hover:bg-primary-200 transition-colors text-lg font-semibold"
           onClick={() => code && router.push(`/race/${code}`)}
         >
-          加入比赛
+          {t('home.join_race')}
         </button>
 
         <button
@@ -98,19 +100,22 @@ export default function Home() {
           onClick={() => myId && router.push(`/race/${myId}`)}
           disabled={!myId}
         >
-          {myId ? `进入我的比赛（${myId}）` : '进入我的比赛'}
+          {myId ? `${t('home.enter_my')} (${myId})` : t('home.enter_my')}
         </button>
 
         <button
           className="w-full py-3 rounded-md bg-primary-200 hover:bg-primary-300 transition-colors text-lg font-semibold"
           onClick={() => window.open('/timer', '_blank')}
         >
-          Timer 计时器
+          {t('home.timer')}
         </button>
       </div>
 
       {/* Desktop nav */}
-      <nav className="hidden md:block mt-10">{navContent}</nav>
+      <nav className="hidden md:block mt-10 flex items-center gap-4">
+        {navContent}
+        <LangSwitcher className="p-2 bg-bg-300 rounded-md" />
+      </nav>
 
       {/* Mobile drawer */}
       {menuOpen && (
@@ -137,6 +142,7 @@ export default function Home() {
               </svg>
             </button>
             {navContent}
+            <LangSwitcher className="mt-4 p-2 bg-bg-300 rounded-md" />
           </div>
         </div>
       )}

@@ -1,0 +1,18 @@
+{
+  "common.home": "Home",
+  "common.save": "Save",
+  "common.close": "Close",
+  "common.course_settings": "Course Settings",
+  "common.course_type": "Course Type",
+  "common.locate_tooltip": "Locate current position",
+  "common.info_tooltip": "Coordinate info",
+  "common.settings_tooltip": "Settings",
+  "common.online": "Online users",
+  "common.decrease": "−",
+  "common.increase": "+",
+  "home.title": "Sailing Judge Tool",
+  "home.input_placeholder": "Enter room code",
+  "home.join_race": "Join race",
+  "home.enter_my": "Enter my race",
+  "home.timer": "Timer"
+} 

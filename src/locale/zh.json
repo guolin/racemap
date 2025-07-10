@@ -1,0 +1,18 @@
+{
+  "common.home": "主页",
+  "common.save": "保存",
+  "common.close": "关闭",
+  "common.course_settings": "航线设置",
+  "common.course_type": "航线类型",
+  "common.locate_tooltip": "定位到当前位置",
+  "common.info_tooltip": "坐标信息",
+  "common.settings_tooltip": "设置",
+  "common.online": "在线人数",
+  "common.decrease": "减少",
+  "common.increase": "增加",
+  "home.title": "帆船裁判工具",
+  "home.input_placeholder": "输入房间码",
+  "home.join_race": "加入比赛",
+  "home.enter_my": "进入我的比赛",
+  "home.timer": "Timer 计时器"
+} 

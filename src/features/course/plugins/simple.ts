@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
 import { CoursePlugin } from './CoursePlugin';
+import { getCurrentLang } from 'src/locale';
 
 export interface SimpleParams {
   axis: number;      // degrees
@@ -16,7 +17,34 @@ const paramSchema = {
 
 export const simpleCoursePlugin: CoursePlugin<SimpleParams> = {
   id: 'simple',
-  name: 'Simple (Axis + Distance)',
+  i18n: {
+    zh: {
+      name: '简单（轴向 + 距离）',
+      labels: {
+        axis: '航向 (°)',
+        distanceNm: '距离 (海里)',
+        startLineM: '起航线长度 (米)'
+      },
+      tooltips: {
+        origin: '起航船',
+        startMark: '起航标',
+        mark1: '1 标'
+      }
+    },
+    en: {
+      name: 'Simple (Axis + Distance)',
+      labels: {
+        axis: 'Axis (°)',
+        distanceNm: 'Distance (NM)',
+        startLineM: 'Start line (m)'
+      },
+      tooltips: {
+        origin: 'Signal boat',
+        startMark: 'Start mark',
+        mark1: 'Mark 1'
+      }
+    }
+  },
   paramSchema,
   defaultParams: {
     axis: 40,
@@ -74,9 +102,11 @@ export const simpleCoursePlugin: CoursePlugin<SimpleParams> = {
       fillOpacity: 1,
     };
 
-    const originMarker = L.circleMarker(origin, markStyle).bindTooltip('起航船');
-    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip('起航标');
-    const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip('1 标');
+    const lang = getCurrentLang();
+    const tooltips = simpleCoursePlugin.i18n![lang].tooltips;
+    const originMarker = L.circleMarker(origin, markStyle).bindTooltip(tooltips.origin);
+    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip(tooltips.startMark);
+    const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip(tooltips.mark1);
 
     group.addLayer(startLine);
     group.addLayer(courseLine);

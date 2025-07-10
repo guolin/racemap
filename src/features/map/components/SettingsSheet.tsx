@@ -1,5 +1,6 @@
 'use client';
 import React, { ChangeEvent } from 'react';
+import { useT, useLang } from 'src/locale';
 import { useCourseStore } from '@features/course/store';
 import { registry, allCoursePlugins, CourseTypeId } from '@features/course/plugins/registry';
 
@@ -12,6 +13,8 @@ interface Props {
  * 通用航线设置面板（底部抽屉）
  */
 const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
+  const t = useT();
+  const lang = useLang();
   const type = useCourseStore((s) => s.type);
   const params = useCourseStore((s) => s.params);
   const setType = useCourseStore((s) => s.setType);
@@ -110,11 +113,11 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>航线设置</div>
+        <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>{t('common.course_settings')}</div>
 
         {/* 航线类型切换 */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
-          航线类型
+          {t('common.course_type')}
           <select
             value={type}
             onChange={(e) => setType(e.target.value as CourseTypeId)}
@@ -122,7 +125,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
           >
             {allCoursePlugins.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                {p.i18n?.[lang]?.name ?? p.name ?? p.id}
               </option>
             ))}
           </select>
@@ -135,7 +138,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
           Object.entries(plugin.paramSchema).map(([k, cfg]: any) =>
             React.cloneElement(
               wrapLabel(
-                cfg.label ?? k,
+                plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k,
                 draft[k] ?? String(params[k] ?? ''),
                 onNumChange(k),
                 cfg.step
@@ -157,7 +160,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
             fontSize: 16,
           }}
         >
-          关闭
+          {t('common.close')}
         </button>
       </div>
     </div>

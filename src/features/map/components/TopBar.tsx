@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useT } from 'src/locale';
 
 interface Props {
   /** 页面标题，通常为房间码或课程 ID */
@@ -19,13 +20,14 @@ interface Props {
  */
 const TopBar: React.FC<Props> = ({ title, onBack, onlineCount = 1 }) => {
   const router = useRouter();
+  const t = useT();
   const handleBack = onBack ?? (() => router.push('/'));
   return (
     <div className="absolute top-0 left-0 right-0 h-14 bg-accent-200 text-bg-100 flex items-center px-3 gap-3 z-[1000]">
       <button
         onClick={handleBack}
         className="p-1 text-bg-100 hover:opacity-80"
-        aria-label="Home"
+        aria-label={t('common.home')}
       >
         {/* House icon */}
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width:24, height:24 }}>
