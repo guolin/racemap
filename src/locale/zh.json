@@ -13,6 +13,11 @@
   "home.title": "帆船裁判工具",
   "home.input_placeholder": "输入房间码",
   "home.join_race": "加入比赛",
-  "home.enter_my": "进入我的比赛",
-  "home.timer": "Timer 计时器"
+  "home.enter_my": "管理比赛",
+  "home.timer": "计时器",
+  "home.about": "这是一个帆船爱好者程序员和裁判的作品，愿你在风与浪中收获自由与快乐。",
+  "home.lang_switch": "文 / EN",
+  "home.lang_zh": "文",
+  "home.lang_en": "EN",
+  "home.help": "使用说明"
 } 

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import zh from './zh.json';
 import en from './en.json';
+import { Button } from '@components/components/ui/button';
 
 export type Lang = 'zh' | 'en';
 
@@ -67,8 +68,14 @@ export const LangSwitcher: React.FC<{ className?: string }> = ({ className }) =>
   const setLang = useSetLang();
   const next = lang === 'zh' ? 'en' : 'zh';
   return (
-    <button onClick={() => setLang(next)} className={className} aria-label="switch language">
+    <Button 
+      variant="outline" 
+      size="sm"
+      onClick={() => setLang(next)} 
+      className={className} 
+      aria-label="switch language"
+    >
       {next === 'zh' ? '中文' : 'EN'}
-    </button>
+    </Button>
   );
 }; 

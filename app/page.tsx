@@ -1,151 +1,102 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useT, LangSwitcher } from 'src/locale';
+import { useT, useLang, useSetLang } from 'src/locale';
 import { getMyRaceId } from '../utils/race';
+import { Button } from '@components/components/ui/button';
+import { Input } from '@components/components/ui/input';
+import Head from 'next/head';
 
 export default function Home() {
   const router = useRouter();
-
   const t = useT();
+  const lang = useLang();
+  const setLang = useSetLang();
   const [code, setCode] = useState('');
   const [myId, setMyId] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setMyId(getMyRaceId());
   }, []);
 
-  const navContent = (
-    <ul className="space-y-3">
-      <li>
-        <a
-          className="text-text-100 opacity-90 hover:text-primary-100 transition-colors"
-          href="https://example.com/help"
-          target="_blank"
-          rel="noreferrer"
-        >
-          帮助
-        </a>
-      </li>
-      <li>
-        <details className="group">
-          <summary className="cursor-pointer text-text-100 opacity-90 group-open:text-primary-100">
-            关于我
-          </summary>
-          <ul className="pl-4 mt-2 space-y-2 text-text-200">
-            <li>
-              <a href="#" className="hover:text-primary-100">爸爸，果儿 编辑航线</a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-primary-100">工作支持</a>
-            </li>
-            <li>
-              <a
-                href="https://github.com/your-repo"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-primary-100"
-              >
-                开源代码
-              </a>
-            </li>
-          </ul>
-        </details>
-      </li>
-    </ul>
-  );
+  const appName = lang === 'zh' ? '锚工' : 'Anchor Guru';
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-bg-100 text-text-100 relative px-4">
-      {/* Mobile hamburger */}
-      <button
-        className="md:hidden absolute top-5 right-5 z-20 p-2 rounded-md bg-bg-300 bg-opacity-70 backdrop-blur"
-        onClick={() => setMenuOpen(true)}
-        aria-label="打开菜单"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="1.5"
-          stroke="currentColor"
-          className="w-6 h-6"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5m-16.5 5.25h16.5m-16.5 5.25h16.5" />
-        </svg>
-      </button>
+    <>
+      <Head>
+        <title>{appName}</title>
+      </Head>
+      <main className="min-h-screen bg-bg-100 text-text-100 px-4 pt-6">
+        {/* 顶部logo插画 */}
+        <div className="flex flex-col items-center mb-6">
+          <img src="/logo.png" alt="logo" style={{ width: 320, height: 320, maxWidth: '100%' }} />
+        </div>
 
-      {/* Card */}
-      <div className="w-full max-w-sm bg-bg-100 rounded-xl shadow-lg p-6 flex flex-col items-center gap-5">
-        <h1 className="text-2xl font-bold">{t('home.title')}</h1>
-
-        <input
-          type="text"
-          placeholder={t('home.input_placeholder')}
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          className="w-full px-4 py-3 rounded-md text-center text-lg text-text-100 focus:outline-none"
-        />
-
-        <button
-          className="w-full py-3 rounded-md bg-primary-100 hover:bg-primary-200 transition-colors text-lg font-semibold"
-          onClick={() => code && router.push(`/race/${code}`)}
-        >
-          {t('home.join_race')}
-        </button>
-
-        <button
-          className="w-full py-3 rounded-md bg-accent-100 hover:bg-accent-200 transition-colors text-lg font-semibold disabled:opacity-50"
-          onClick={() => myId && router.push(`/race/${myId}`)}
-          disabled={!myId}
-        >
-          {myId ? `${t('home.enter_my')} (${myId})` : t('home.enter_my')}
-        </button>
-
-        <button
-          className="w-full py-3 rounded-md bg-primary-200 hover:bg-primary-300 transition-colors text-lg font-semibold"
-          onClick={() => window.open('/timer', '_blank')}
-        >
-          {t('home.timer')}
-        </button>
-      </div>
-
-      {/* Desktop nav */}
-      <nav className="hidden md:block mt-10 flex items-center gap-4">
-        {navContent}
-        <LangSwitcher className="p-2 bg-bg-300 rounded-md" />
-      </nav>
-
-      {/* Mobile drawer */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-30 flex" onClick={() => setMenuOpen(false)}>
-          <div className="flex-1 bg-black/50 backdrop-blur-sm" />
-          <div
-            className="w-64 bg-bg-100 p-6"
-            onClick={(e) => e.stopPropagation()}
+        {/* 按钮区 */}
+        <div className="w-full max-w-[400px] mx-auto flex flex-col gap-4">
+          <Button
+            size="lg"
+            className="w-full text-lg font-semibold h-16"
+            onClick={() => myId && router.push(`/race/${myId}`)}
+            disabled={!myId}
           >
-            <button
-              className="mb-6 p-2 rounded-md bg-bg-300"
-              onClick={() => setMenuOpen(false)}
-              aria-label="关闭菜单"
+            {myId ? t('home.enter_my') + ` (${myId})` : t('home.enter_my')}
+          </Button>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="w-full text-lg font-semibold h-16"
+            onClick={() => router.push('/timer')}
+          >
+            {t('home.timer')}
+          </Button>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder={t('home.input_placeholder')}
+              value={code}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value.toUpperCase())}
+              className="flex-1 text-center text-lg h-16"
+            />
+            <Button
+              size="lg"
+              className="text-lg font-semibold px-6 h-16"
+              onClick={() => code && router.push(`/race/${code}`)}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            {navContent}
-            <LangSwitcher className="mt-4 p-2 bg-bg-300 rounded-md" />
+              {t('home.join_race')}
+            </Button>
           </div>
         </div>
-      )}
-    </main>
+
+        {/* 语言切换和使用说明 */}
+        <div className="flex items-center justify-between mt-8 px-2 select-none">
+          <div className="flex items-center gap-1">
+            <span
+              className={lang === 'zh' ? 'font-bold cursor-pointer' : 'cursor-pointer'}
+              onClick={() => setLang('zh')}
+            >
+              文
+            </span>
+            <span className="text-black">/</span>
+            <span
+              className={lang === 'en' ? 'font-bold cursor-pointer' : 'cursor-pointer'}
+              onClick={() => setLang('en')}
+            >
+              EN
+            </span>
+          </div>
+          <span className="text-gray-800 text-sm font-medium cursor-pointer" style={{letterSpacing: 1}}>
+            {lang === 'zh' ? '使用说明' : 'manual'}
+          </span>
+        </div>
+
+        {/* 关于我们 */}
+        <div className="mt-8 px-2">
+          <div className="text-base leading-relaxed text-gray-700">
+            {t('home.about')}
+          </div>
+        </div>
+      </main>
+    </>
   );
 } 

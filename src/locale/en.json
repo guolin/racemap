@@ -8,11 +8,16 @@
   "common.info_tooltip": "Coordinate info",
   "common.settings_tooltip": "Settings",
   "common.online": "Online users",
-  "common.decrease": "−",
+  "common.decrease": "-",
   "common.increase": "+",
   "home.title": "Sailing Judge Tool",
   "home.input_placeholder": "Enter room code",
   "home.join_race": "Join race",
-  "home.enter_my": "Enter my race",
-  "home.timer": "Timer"
+  "home.enter_my": "Manage race",
+  "home.timer": "Timer",
+  "home.about": "A work by a programmer and judge who loves sailing. May you find freedom and joy in the wind and waves.",
+  "home.lang_switch": "ZH / EN",
+  "home.lang_zh": "ZH",
+  "home.lang_en": "EN",
+  "home.help": "Help"
 } 

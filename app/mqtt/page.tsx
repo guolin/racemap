@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { getMqttClient } from '@features/mqtt/service';
+import { Button } from '@components/components/ui/button';
 
 const posTopic = (id: string) => `sailing/${id}/pos`;
 const routeTopic = (id: string) => `sailing/${id}/route`;
@@ -73,12 +74,12 @@ export default function MqttDebugPage() {
           onChange={(e) => setRaceId(e.target.value.trim())}
           style={{ padding: 8, fontSize: 16, width: 160 }}
         />
-        <button
+        <Button
           onClick={handleSubscribe}
-          style={{ marginLeft: 12, padding: '8px 16px' }}
+          className="ml-3"
         >
           订阅
-        </button>
+        </Button>
       </div>
 
       <div style={{ border: '1px solid #ddd', height: '70vh', overflowY: 'auto', fontFamily: 'monospace', fontSize: 12, padding: 8 }}>
