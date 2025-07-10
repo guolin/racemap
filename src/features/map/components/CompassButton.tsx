@@ -4,14 +4,15 @@ import React from 'react';
 interface Props {
   bearing: number; // 当前地图 bearing
   onToggle: () => void; // 点击切换 北朝上/航线朝上
+  top?: number; // 距顶部距离 px (可选)
 }
 
-const CompassButton: React.FC<Props> = ({ bearing, onToggle }) => {
+const CompassButton: React.FC<Props> = ({ bearing, onToggle, top = 68 }) => {
   return (
     <button
       style={{
         position: 'absolute',
-        top: 68,
+        top,
         left: 12,
         width: 48,
         height: 48,

@@ -9,9 +9,9 @@ export interface SimpleParams {
 }
 
 const paramSchema = {
-  axis: { type: 'number', min: 0, max: 360, step: 1 },
+  axis: { type: 'number', min: 0, max: 360, step: 5 },
   distanceNm: { type: 'number', min: 0, step: 0.1 },
-  startLineM: { type: 'number', min: 0, step: 1 },
+  startLineM: { type: 'number', min: 0, step: 10 },
 };
 
 export const simpleCoursePlugin: CoursePlugin<SimpleParams> = {

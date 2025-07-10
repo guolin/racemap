@@ -11,11 +11,11 @@ export interface OneFourParams {
 }
 
 const paramSchema = {
-  axis:        { type: 'number', label: '角度 (°M)', step: 1 },
+  axis:        { type: 'number', label: '角度 (°M)', step: 5 },
   distanceNm:  { type: 'number', label: '距离 (NM)',  step: 0.1 },
-  startLineM:  { type: 'number', label: '起航线长度 (m)', step: 1 },
-  mark4Width:  { type: 'number', label: '4 门宽度 (m)',  step: 1 },
-  mark4Dist:   { type: 'number', label: '4 门距离起航线 (m)', step: 1 },
+  startLineM:  { type: 'number', label: '起航线长度 (m)', step: 10 },
+  mark4Width:  { type: 'number', label: '4 门宽度 (m)',  step: 10 },
+  mark4Dist:   { type: 'number', label: '4 门距离起航线 (m)', step: 10 },
 };
 
 export const oneFourPlugin: CoursePlugin<OneFourParams> = {

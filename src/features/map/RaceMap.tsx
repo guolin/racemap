@@ -26,6 +26,7 @@ import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
 import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublish';
 import { useObserversPos } from '@features/mqtt/hooks/useObserversPos';
 import { ObserversLayer } from '@features/map/components/ObserversLayer';
+import CourseSettingsDrawer from '@features/map/components/CourseSettingsDrawer';
 
 interface Props {
   courseId: string;
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export default function RaceMap({ courseId, isAdmin = false }: Props) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const mapRef = useLeafletMap('map-root');
 
   // ---- Course params ----
@@ -195,6 +197,10 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   }, [isAdmin, type, params, publishNow]);
 
   // ---- UI ----
+  const handleDrawerSave = () => {
+    if (origin) redraw(origin);
+    if (publishNow) publishNow();
+  };
 
   return (
     <div className="relative w-screen h-screen">
@@ -212,12 +218,28 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
           )}
         </div>
       )}
-      <SideToolbar isAdmin={isAdmin} onLocate={() => { 
-        if (gps.latLng && mapRef.current) {
-          // 平滑地移动到用户位置，但保持当前缩放级别
-          mapRef.current.panTo(gps.latLng, { animate: true });
-        }
-      }} onSettings={() => setSettingsVisible(true)} onInfo={() => setCoordinatesDialogVisible(true)} />
+      <SideToolbar 
+        isAdmin={isAdmin} 
+        onLocate={() => { 
+          if (gps.latLng && mapRef.current) {
+            // 平滑地移动到用户位置，但保持当前缩放级别
+            mapRef.current.panTo(gps.latLng, { animate: true });
+          }
+        }} 
+        onSettings={() => {
+          if (isAdmin) {
+            setDrawerOpen(true);
+          } else {
+            setSettingsVisible(true);
+          }
+        }} 
+        onInfo={() => setCoordinatesDialogVisible(true)} 
+      />
+      <CourseSettingsDrawer 
+        isOpen={drawerOpen} 
+        onClose={() => setDrawerOpen(false)} 
+        onSave={handleDrawerSave}
+      />
       <SettingsSheet isVisible={isAdmin && settingsVisible} onClose={closeSettings} />
       <CoordinatesDialog 
         isVisible={coordinatesDialogVisible}
@@ -230,7 +252,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = courseAxis||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
       <div style={{ position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)', display:'flex', gap:12, zIndex:1000 }}>
         <InfoCard title="COURSE AXIS" value={`${courseAxisNum}°M`} />
-        <InfoCard title="COURSE SIZE" value={`${courseSizeNm}NM`} />
+        <InfoCard title="COURSE SIZE" value={`${courseSizeNm.toFixed(1)}NM`} />
       </div>
     </div>
   );

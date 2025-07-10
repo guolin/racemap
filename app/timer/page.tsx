@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
+import TopBar from '@features/map/components/TopBar';
 
 // Simple helper to parse HHMM or HHMMSS numeric strings to seconds from midnight
 function parseTimeString(value: string): number | null {
@@ -67,66 +68,69 @@ export default function TimerPage() {
   const nowStr = formatTime(now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds());
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Timer 计时工具</h1>
-        <span className="tabular-nums font-mono text-2xl">{nowStr}</span>
-      </div>
+    <>
+      <TopBar title="TIMER" />
+      <div className="max-w-2xl mx-auto p-4 space-y-6 mt-16">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Timer 计时工具</h1>
+          <span className="tabular-nums font-mono text-2xl">{nowStr}</span>
+        </div>
 
-      {/* Warning Signal */}
-      <div>
-        <label className={labelClass}>预告信号时间 (HHMM 或 HHMMSS)</label>
-        <input
-          className={inputClass}
-          value={warning}
-          onChange={(e) => setWarning(e.target.value)}
-          placeholder="例如 132500"
-        />
-      </div>
+        {/* Warning Signal */}
+        <div>
+          <label className={labelClass}>预告信号时间 (HHMM 或 HHMMSS)</label>
+          <input
+            className={inputClass}
+            value={warning}
+            onChange={(e) => setWarning(e.target.value)}
+            placeholder="例如 132500"
+          />
+        </div>
 
-      <div className="space-y-2">
-        {signalRows.map((row) => (
-          <div
-            key={row.label}
-            className={`flex items-center space-x-4 ${row.rel === 0 ? 'text-red-600 font-bold' : ''}`}
-          >
-            <span className="w-16 text-right">
-              {row.rel > 0 ? `+${row.rel}` : row.rel}min
-            </span>
-            <span className="flex-1">{row.label}</span>
-            <span className="tabular-nums font-mono text-2xl">{row.sec != null ? formatTime(row.sec) : ''}</span>
+        <div className="space-y-2">
+          {signalRows.map((row) => (
+            <div
+              key={row.label}
+              className={`flex items-center space-x-4 ${row.rel === 0 ? 'text-red-600 font-bold' : ''}`}
+            >
+              <span className="w-16 text-right">
+                {row.rel > 0 ? `+${row.rel}` : row.rel}min
+              </span>
+              <span className="flex-1">{row.label}</span>
+              <span className="tabular-nums font-mono text-2xl">{row.sec != null ? formatTime(row.sec) : ''}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Finish Times */}
+        <div>
+          <label className={labelClass}>第一个冲终点时间</label>
+          <input
+            className={inputClass}
+            value={firstFinish}
+            onChange={(e) => setFirstFinish(e.target.value)}
+            placeholder="例如 141230"
+          />
+          <div className="mt-2">
+            <span className={labelClass}>关门时间 (+10 min): </span>
+            <span className={`${gateCloseSec != null ? 'text-red-600 font-bold' : ''} text-2xl font-mono`}>{gateCloseSec != null ? formatTime(gateCloseSec) : ''}</span>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Finish Times */}
-      <div>
-        <label className={labelClass}>第一个冲终点时间</label>
-        <input
-          className={inputClass}
-          value={firstFinish}
-          onChange={(e) => setFirstFinish(e.target.value)}
-          placeholder="例如 141230"
-        />
-        <div className="mt-2">
-          <span className={labelClass}>关门时间 (+10 min): </span>
-          <span className={`${gateCloseSec != null ? 'text-red-600 font-bold' : ''} text-2xl font-mono`}>{gateCloseSec != null ? formatTime(gateCloseSec) : ''}</span>
+        <div>
+          <label className={labelClass}>最后一个终点时间</label>
+          <input
+            className={inputClass}
+            value={lastFinish}
+            onChange={(e) => setLastFinish(e.target.value)}
+            placeholder="例如 145500"
+          />
+          <div className="mt-2">
+            <span className={labelClass}>抗议时限 (+40 min): </span>
+            <span className="text-2xl font-mono">{protestLimitSec != null ? formatTime(protestLimitSec) : ''}</span>
+          </div>
         </div>
       </div>
-
-      <div>
-        <label className={labelClass}>最后一个终点时间</label>
-        <input
-          className={inputClass}
-          value={lastFinish}
-          onChange={(e) => setLastFinish(e.target.value)}
-          placeholder="例如 145500"
-        />
-        <div className="mt-2">
-          <span className={labelClass}>抗议时限 (+40 min): </span>
-          <span className="text-2xl font-mono">{protestLimitSec != null ? formatTime(protestLimitSec) : ''}</span>
-        </div>
-      </div>
-    </div>
+    </>
   );
 } 

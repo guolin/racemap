@@ -11,11 +11,11 @@ export interface Simple1aParams {
 }
 
 const paramSchema = {
-  axis:          { type: 'number', label: '角度 (°M)', step: 1 },
+  axis:          { type: 'number', label: '角度 (°M)', step: 5 },
   distanceNm:    { type: 'number', label: '距离 (NM)',  step: 0.1 },
-  startLineM:    { type: 'number', label: '起航线长度 (m)', step: 1 },
-  mark1AngleDeg: { type: 'number', label: '1标夹角 (°)', step: 1 },
-  mark1aDist:    { type: 'number', label: '1a标距离 (m)', step: 1 },
+  startLineM:    { type: 'number', label: '起航线长度 (m)', step: 10 },
+  mark1AngleDeg: { type: 'number', label: '1标夹角 (°)', step: 5 },
+  mark1aDist:    { type: 'number', label: '1a标距离 (m)', step: 10 },
 };
 
 export const simple1aPlugin: CoursePlugin<Simple1aParams> = {
