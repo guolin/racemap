@@ -10,6 +10,7 @@
   "common.online": "在线人数",
   "common.decrease": "减少",
   "common.increase": "增加",
+  "common.select_course_type": "选择航线类型",
   "home.title": "帆船裁判工具",
   "home.input_placeholder": "输入房间码",
   "home.join_race": "加入比赛",
@@ -19,5 +20,15 @@
   "home.lang_switch": "文 / EN",
   "home.lang_zh": "文",
   "home.lang_en": "EN",
-  "home.help": "使用说明"
+  "home.help": "使用说明",
+  "coordinates.title": "坐标信息",
+  "coordinates.signal_boat": "信号船",
+  "coordinates.pin_end": "起航标",
+  "coordinates.mark_1": "1标",
+  "coordinates.mark_1a": "1a标",
+  "coordinates.mark_4p": "4P",
+  "coordinates.mark_4s": "4S",
+  "coordinates.no_coordinates": "暂无坐标",
+  "coordinates.waiting_position": "等待信号船位置...",
+  "coordinates.course": "航线"
 } 

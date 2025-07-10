@@ -24,13 +24,13 @@ const TopBar: React.FC<Props> = ({ title, onBack, onlineCount = 1 }) => {
   const t = useT();
   const handleBack = onBack ?? (() => router.push('/'));
   return (
-    <div className="absolute top-0 left-0 right-0 h-14 bg-primary-100 text-white flex items-center px-3 gap-3 z-[1000]">
+    <div className="absolute top-0 left-0 right-0 h-14 bg-background border-b border-border flex items-center px-3 gap-3 z-[1000]">
       <Button
         variant="ghost"
         size="icon"
         onClick={handleBack}
         aria-label={t('common.home')}
-        className="text-white hover:bg-primary-200"
+        className="text-foreground hover:bg-accent"
       >
         {/* House icon */}
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width:24, height:24 }}>

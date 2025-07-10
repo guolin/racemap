@@ -26,7 +26,7 @@ export default function Home() {
       <Head>
         <title>{appName}</title>
       </Head>
-      <main className="min-h-screen bg-bg-100 text-text-100 px-4 pt-6">
+      <main className="min-h-screen bg-background text-foreground px-4 pt-6">
         {/* 顶部logo插画 */}
         <div className="flex flex-col items-center mb-6">
           <img src="/logo.png" alt="logo" style={{ width: 320, height: 320, maxWidth: '100%' }} />

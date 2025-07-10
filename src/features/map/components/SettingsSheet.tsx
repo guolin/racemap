@@ -3,6 +3,15 @@ import React, { ChangeEvent } from 'react';
 import { useT, useLang } from 'src/locale';
 import { useCourseStore } from '@features/course/store';
 import { registry, allCoursePlugins, CourseTypeId } from '@features/course/plugins/registry';
+import { Button } from '@components/components/ui/button';
+import { Input } from '@components/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/components/ui/select';
 
 interface Props {
   isVisible: boolean;
@@ -35,13 +44,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
 
   const plugin = registry[type];
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: 12,
-    fontSize: 16,
-    border: '1px solid #ccc',
-    borderRadius: 8,
-  };
+  // 移除自定义样式，使用UI组件的默认样式
 
   const onNumChange = (k: string) => (e: ChangeEvent<HTMLInputElement>) => {
     setDraft((d) => ({ ...d, [k]: e.target.value }));
@@ -68,15 +71,14 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
     onChange: (e: ChangeEvent<HTMLInputElement>) => void,
     step?: number
   ) => (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
+    <label className="flex flex-col gap-2 text-sm">
       {label}
-      <input
+      <Input
         type="number"
         value={value}
         onChange={onChange}
         onBlur={() => commitField(label)}
         step={step}
-        style={inputStyle}
       />
     </label>
   );
@@ -113,22 +115,23 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>{t('common.course_settings')}</div>
+        <div className="text-center text-lg font-bold text-foreground">{t('common.course_settings')}</div>
 
         {/* 航线类型切换 */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
           {t('common.course_type')}
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as CourseTypeId)}
-            style={{ ...inputStyle, padding: 10 }}
-          >
-            {allCoursePlugins.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.i18n?.[lang]?.name ?? p.name ?? p.id}
-              </option>
-            ))}
-          </select>
+          <Select value={type} onValueChange={(value) => setType(value as CourseTypeId)}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('common.select_course_type')} />
+            </SelectTrigger>
+            <SelectContent className="z-[9999]">
+              {allCoursePlugins.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.i18n?.[lang]?.name ?? p.name ?? p.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
 
         {/* 参数输入表单 */}
@@ -148,20 +151,9 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
           )
         )}
 
-        <button
-          onClick={commitAllAndClose}
-          style={{
-            marginTop: 12,
-            padding: 12,
-            background: '#ff7f0e',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 16,
-          }}
-        >
+        <Button onClick={commitAllAndClose} className="bg-orange-500 text-white">
           {t('common.close')}
-        </button>
+        </Button>
       </div>
     </div>
   );

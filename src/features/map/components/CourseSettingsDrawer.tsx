@@ -6,6 +6,15 @@ import CompassButton from '@features/map/components/CompassButton';
 import { useCourseStore } from '@features/course/store';
 import { registry, allCoursePlugins, CourseTypeId } from '@features/course/plugins/registry';
 import { useLang } from 'src/locale';
+import { Button } from '@components/components/ui/button';
+import { Input } from '@components/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/components/ui/select';
 
 // Ensure leaflet rotate plugin available
 if (typeof window !== 'undefined') {
@@ -66,18 +75,29 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
       className={`fixed inset-0 z-[2000] bg-white flex flex-col transform transition-transform duration-300 ${animClass}`}
     >
       {/* Top Bar */}
-      <div className="h-14 flex items-center px-4 shadow-md bg-white">
-        <button onClick={closeWithAnim} aria-label="Back" className="p-2 mr-4">
+      <div className="h-14 flex items-center px-4 shadow-md bg-background border-b border-border">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={closeWithAnim} 
+          aria-label="Back" 
+          className="mr-4 text-foreground hover:bg-accent"
+        >
           ←
-        </button>
-        <h1 className="text-lg font-semibold flex-1">{t('common.course_settings')}</h1>
-        <button onClick={handleSave} aria-label="Save" className="p-2 text-blue-600 font-medium">
+        </Button>
+        <h1 className="text-lg font-semibold flex-1 text-foreground">{t('common.course_settings')}</h1>
+        <Button 
+          variant="default"
+          onClick={handleSave} 
+          aria-label="Save"
+          className="font-medium"
+        >
           {t('common.save')}
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4 relative">
         {/* Preview */}
         <div className="flex-1 md:w-1/2 h-64 md:h-auto rounded overflow-hidden">
           <PreviewMap />
@@ -110,14 +130,7 @@ function CourseSettingsForm() {
 
   const plugin = registry[type];
 
-  const inputStyle: React.CSSProperties = {
-    width: 100,
-    padding: 10,
-    fontSize: 16,
-    border: '1px solid #ccc',
-    borderRadius: 8,
-    textAlign: 'center',
-  };
+  // 移除自定义样式，使用UI组件的默认样式
 
   const onNumChange = (k: string) => (e: ChangeEvent<HTMLInputElement>) => {
     setDraft((d) => ({ ...d, [k]: e.target.value }));
@@ -145,17 +158,18 @@ function CourseSettingsForm() {
       {/* Type selector */}
       <label className="flex flex-col gap-2 text-sm">
         {t('common.course_type')}
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as CourseTypeId)}
-          style={{ ...inputStyle, width: '100%', padding: 10 }}
-        >
-          {allCoursePlugins.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.i18n?.[lang]?.name ?? p.name ?? p.id}
-            </option>
-          ))}
-        </select>
+        <Select value={type} onValueChange={(value) => setType(value as CourseTypeId)}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('common.select_course_type')} />
+          </SelectTrigger>
+          <SelectContent className="z-[9999]">
+            {allCoursePlugins.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.i18n?.[lang]?.name ?? p.name ?? p.id}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </label>
 
       {/* Parameters */}
@@ -167,28 +181,30 @@ function CourseSettingsForm() {
           return (
             <div key={k} className="flex items-center gap-3" style={{ fontSize: 14 }}>
               <span className="flex-1 min-w-[6rem]">{plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k}</span>
-              <button
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => adjust(k, -step)}
-                className="w-10 h-10 flex items-center justify-center rounded bg-gray-200 text-lg"
                 aria-label="decrease"
               >
                 −
-              </button>
-              <input
+              </Button>
+              <Input
                 type="number"
                 value={draft[k] ?? String(params[k] ?? '')}
                 onChange={onNumChange(k)}
                 onBlur={() => commitField(k)}
                 step={step}
-                style={inputStyle}
+                className="w-24 text-center"
               />
-              <button
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => adjust(k, step)}
-                className="w-10 h-10 flex items-center justify-center rounded bg-gray-200 text-lg"
                 aria-label="increase"
               >
                 +
-              </button>
+              </Button>
             </div>
           );
         })

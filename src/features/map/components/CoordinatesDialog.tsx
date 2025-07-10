@@ -1,6 +1,7 @@
 import React from 'react';
 import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
+import { useT } from 'src/locale';
 
 interface CoordinatePoint {
   name: string;
@@ -23,7 +24,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
   courseType, 
   courseParams 
 }) => {
-  // (debug logs removed)
+  const t = useT();
   
   if (!isVisible) return null;
 
@@ -35,7 +36,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
     
     const points: CoordinatePoint[] = [
       {
-        name: 'Signal Boat',
+        name: t('coordinates.signal_boat'),
         lat: origin.lat,
         lng: origin.lng
       }
@@ -50,7 +51,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
       const [startMarkLat, startMarkLng] = destinationPoint(origin.lat, origin.lng, startMarkBearing, startLineM);
       
       points.push({
-        name: 'Pin End',
+        name: t('coordinates.pin_end'),
         lat: startMarkLat,
         lng: startMarkLng
       });
@@ -63,7 +64,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
       const [mark1Lat, mark1Lng] = destinationPoint(midLat, midLng, axis, distanceNm * 1852);
       
       points.push({
-        name: 'Mark 1',
+        name: t('coordinates.mark_1'),
         lat: mark1Lat,
         lng: mark1Lng
       });
@@ -75,7 +76,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
         const [mark1aLat, mark1aLng] = destinationPoint(mark1Lat, mark1Lng, bearing1a, mark1aDist);
         
         points.push({
-          name: 'Mark 1a',
+          name: t('coordinates.mark_1a'),
           lat: mark1aLat,
           lng: mark1aLng
         });
@@ -93,7 +94,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
         const [fourPLat, fourPLng] = destinationPoint(centreLat, centreLng, fourPBearing, mark4Width / 2);
         
         points.push({
-          name: '4P',
+          name: t('coordinates.mark_4p'),
           lat: fourPLat,
           lng: fourPLng
         });
@@ -103,7 +104,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
         const [fourSLat, fourSLng] = destinationPoint(centreLat, centreLng, fourSBearing, mark4Width / 2);
         
         points.push({
-          name: '4S',
+          name: t('coordinates.mark_4s'),
           lat: fourSLat,
           lng: fourSLng
         });
@@ -136,7 +137,7 @@ export const CoordinatesDialog: React.FC<Props> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
       <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Coordinates</h2>
+          <h2 className="text-xl font-bold">{t('coordinates.title')}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -157,14 +158,14 @@ export const CoordinatesDialog: React.FC<Props> = ({
             ))
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <div className="text-lg mb-2">No coordinates yet</div>
-              <div className="text-sm">Waiting for the signal boat position …</div>
+              <div className="text-lg mb-2">{t('coordinates.no_coordinates')}</div>
+              <div className="text-sm">{t('coordinates.waiting_position')}</div>
             </div>
           )}
         </div>
         
         <div className="mt-6 text-xs text-gray-500">
-          Course: {courseType || 'N/A'}
+          {t('coordinates.course')}: {courseType || 'N/A'}
         </div>
       </div>
     </div>

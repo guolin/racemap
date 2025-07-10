@@ -10,6 +10,7 @@
   "common.online": "Online users",
   "common.decrease": "-",
   "common.increase": "+",
+  "common.select_course_type": "Select course type",
   "home.title": "Sailing Judge Tool",
   "home.input_placeholder": "Enter room code",
   "home.join_race": "Join race",
@@ -19,5 +20,15 @@
   "home.lang_switch": "ZH / EN",
   "home.lang_zh": "ZH",
   "home.lang_en": "EN",
-  "home.help": "Help"
+  "home.help": "Help",
+  "coordinates.title": "Coordinates",
+  "coordinates.signal_boat": "Signal Boat",
+  "coordinates.pin_end": "Pin End",
+  "coordinates.mark_1": "Mark 1",
+  "coordinates.mark_1a": "Mark 1a",
+  "coordinates.mark_4p": "4P",
+  "coordinates.mark_4s": "4S",
+  "coordinates.no_coordinates": "No coordinates yet",
+  "coordinates.waiting_position": "Waiting for the signal boat position...",
+  "coordinates.course": "Course"
 } 
