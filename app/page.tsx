@@ -69,7 +69,7 @@ export default function Home() {
         </div>
 
         {/* 语言切换和使用说明 */}
-        <div className="flex items-center justify-between mt-8 px-2 select-none">
+        <div className="mt-8 px-2 max-w-[400px] mx-auto flex items-center justify-between select-none">
           <div className="flex items-center gap-1">
             <span
               className={lang === 'zh' ? 'font-bold cursor-pointer' : 'cursor-pointer'}
@@ -91,7 +91,7 @@ export default function Home() {
         </div>
 
         {/* 关于我们 */}
-        <div className="mt-8 px-2">
+        <div className="mt-8 px-2 max-w-[400px] mx-auto">
           <div className="text-base leading-relaxed text-gray-700">
             {t('home.about')}
           </div>
