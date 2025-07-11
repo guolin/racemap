@@ -1,22 +1,21 @@
 import React from 'react';
+import { PiAnchorBold } from 'react-icons/pi';
 
-interface Props {
+interface OnlineCountProps {
   count: number;
+  className?: string;
 }
 
-export const OnlineCount: React.FC<Props> = ({ count }) => (
-  <div
-    style={{
-      position: 'absolute',
-      top: 8,
-      right: 8,
-      background: 'rgba(255,255,255,0.8)',
-      padding: '2px 6px',
-      borderRadius: 4,
-      fontSize: 12,
-      zIndex: 1200,
-    }}
-  >
-    👤 {count}
-  </div>
-); 
+/**
+ * 在线人数显示组件
+ */
+const OnlineCount: React.FC<OnlineCountProps> = ({ count, className = '' }) => {
+  return (
+    <div className={`flex items-center gap-1 text-base font-medium ${className}`}>
+      <PiAnchorBold style={{ width: 20, height: 20 }} />
+      {count}
+    </div>
+  );
+};
+
+export default OnlineCount; 

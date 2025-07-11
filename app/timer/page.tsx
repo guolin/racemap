@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
-import TopBar from '@features/map/components/TopBar';
+import TopBar from '../../src/features/map/components/TopBar';
+import Clock from '../../src/features/map/components/Clock';
 
 // Simple helper to parse HHMM or HHMMSS numeric strings to seconds from midnight
 function parseTimeString(value: string): number | null {
@@ -69,7 +70,7 @@ export default function TimerPage() {
 
   return (
     <>
-      <TopBar title="TIMER" />
+      <TopBar center="TIMER" right={<Clock />} />
       <div className="max-w-2xl mx-auto p-4 space-y-6 mt-16">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Timer 计时工具</h1>

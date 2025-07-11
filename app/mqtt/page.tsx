@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import TopBar from '../../src/features/map/components/TopBar';
 import { getMqttClient } from '@features/mqtt/service';
 import { Button } from '@components/components/ui/button';
 
@@ -63,32 +64,35 @@ export default function MqttDebugPage() {
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>MQTT 调试</h2>
-      <div style={{ marginBottom: 12 }}>
-        <input
-          type="text"
-          value={raceId}
-          maxLength={6}
-          placeholder="Race ID (6位)"
-          onChange={(e) => setRaceId(e.target.value.trim())}
-          style={{ padding: 8, fontSize: 16, width: 160 }}
-        />
-        <Button
-          onClick={handleSubscribe}
-          className="ml-3"
-        >
-          订阅
-        </Button>
-      </div>
+    <>
+      <TopBar center="MQTT 调试" />
+      <div style={{ padding: 16, marginTop: 56 }}>
+        <h2>MQTT 调试</h2>
+        <div style={{ marginBottom: 12 }}>
+          <input
+            type="text"
+            value={raceId}
+            maxLength={6}
+            placeholder="Race ID (6位)"
+            onChange={(e) => setRaceId(e.target.value.trim())}
+            style={{ padding: 8, fontSize: 16, width: 160 }}
+          />
+          <Button
+            onClick={handleSubscribe}
+            className="ml-3"
+          >
+            订阅
+          </Button>
+        </div>
 
-      <div style={{ border: '1px solid #ddd', height: '70vh', overflowY: 'auto', fontFamily: 'monospace', fontSize: 12, padding: 8 }}>
-        {logs.map((l, idx) => (
-          <div key={idx} style={{ color: l.type === 'recv' ? '#000' : '#666' }}>
-            {new Date(l.ts ?? Date.now()).toLocaleTimeString()} {l.type.toUpperCase()} {l.topic ? '[' + l.topic + ']' : ''} {l.payload || l.msg}
-          </div>
-        ))}
+        <div style={{ border: '1px solid #ddd', height: '70vh', overflowY: 'auto', fontFamily: 'monospace', fontSize: 12, padding: 8 }}>
+          {logs.map((l, idx) => (
+            <div key={idx} style={{ color: l.type === 'recv' ? '#000' : '#666' }}>
+              {new Date(l.ts ?? Date.now()).toLocaleTimeString()} {l.type.toUpperCase()} {l.topic ? '[' + l.topic + ']' : ''} {l.payload || l.msg}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 } 

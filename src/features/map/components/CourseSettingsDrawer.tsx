@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
+import { IoArrowBackOutline } from 'react-icons/io5';
 import { useT } from 'src/locale';
 import L from 'leaflet';
 import CompassButton from '@features/map/components/CompassButton';
@@ -15,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@components/components/ui/select';
+import TopBar from './TopBar';
 
 // Ensure leaflet rotate plugin available
 if (typeof window !== 'undefined') {
@@ -30,20 +32,54 @@ interface Props {
   onSave: () => void;
 }
 
+// 工具函数：将 params 转为 string map
+function toStringMap(obj: Record<string, any>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const k in obj) {
+    result[k] = obj[k] != null ? String(obj[k]) : '';
+  }
+  return result;
+}
+// 工具函数：根据 schema 类型安全转换 draft
+function parseDraftBySchema(draft: Record<string, string>, schema: any): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const key in schema) {
+    const type = schema[key].type;
+    const val = draft[key];
+    if (type === 'number') {
+      const n = Number(val);
+      result[key] = isNaN(n) ? schema[key].default ?? 0 : n;
+    } else if (type === 'boolean') {
+      result[key] = val === 'true';
+    } else {
+      result[key] = val ?? '';
+    }
+  }
+  return result;
+}
+
 export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props) {
   const t = useT();
+  const params = useCourseStore((s) => s.params);
+  const setParams = useCourseStore((s) => s.setParams);
+  const type = useCourseStore((s) => s.type);
+  const plugin = registry[type];
   const [visible, setVisible] = useState(isOpen);
   const [animClass, setAnimClass] = useState(isOpen ? 'translate-x-0' : 'translate-x-full');
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  // 本地草稿分支，全部 string
+  const [draft, setDraft] = useState(() => toStringMap(params));
+  useEffect(() => {
+    if (isOpen) setDraft(toStringMap(params));
+  }, [isOpen, params]);
 
   // sync open state
   useEffect(() => {
     if (isOpen) {
       setVisible(true);
-      // next tick slide in
       requestAnimationFrame(() => setAnimClass('translate-x-0'));
     } else {
-      // slide out then hide
       setAnimClass('translate-x-full');
       const t = setTimeout(() => setVisible(false), 300);
       return () => clearTimeout(t);
@@ -55,16 +91,18 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
     setTimeout(onClose, 300);
   };
 
+  // 保存：将draft按schema转为准确类型再写入主分支
   const handleSave = () => {
-    // 尝试提交未失焦的输入
-    if (typeof document !== 'undefined') {
-      (document.activeElement as HTMLElement | null)?.blur?.();
-    }
-    // 等待本轮 state 同步再调用 onSave
+    setParams(parseDraftBySchema(draft, plugin.paramSchema));
     setTimeout(() => {
       onSave();
       closeWithAnim();
     }, 0);
+  };
+
+  // 取消：直接关闭，不保存
+  const handleCancel = () => {
+    closeWithAnim();
   };
 
   if (!visible) return null;
@@ -75,82 +113,90 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
       className={`fixed inset-0 z-[2000] bg-white flex flex-col transform transition-transform duration-300 ${animClass}`}
     >
       {/* Top Bar */}
-      <div className="h-14 flex items-center px-4 shadow-md bg-background border-b border-border">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={closeWithAnim} 
-          aria-label="Back" 
-          className="mr-4 text-foreground hover:bg-accent"
-        >
-          ←
-        </Button>
-        <h1 className="text-lg font-semibold flex-1 text-foreground">{t('common.course_settings')}</h1>
-        <Button 
-          variant="default"
-          onClick={handleSave} 
-          aria-label="Save"
-          className="font-medium"
-        >
-          {t('common.save')}
-        </Button>
-      </div>
-
+      <TopBar
+        left={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            aria-label={t('common.save')}
+            className="text-foreground hover:bg-accent flex items-center gap-1 px-2 py-1 text-base font-medium"
+          >
+            <IoArrowBackOutline style={{ width: 20, height: 20 }} />
+            <span className="ml-1">{t('common.save')}</span>
+          </Button>
+        }
+        center={t('common.course_settings')}
+        right={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCancel}
+            aria-label={t('common.cancel')}
+            className="font-medium text-gray-500 border-gray-300 px-3 py-1"
+          >
+            {t('common.cancel')}
+          </Button>
+        }
+      />
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4 relative">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4 relative pt-14">
         {/* Preview */}
-        <div className="flex-1 md:w-1/2 h-64 md:h-auto rounded overflow-hidden">
-          <PreviewMap />
+        <div className="w-full max-w-[600px] m-2 mx-auto aspect-[4/3] bg-[#f9f9f9] border border-neutral-200 flex items-center justify-center">
+          <PreviewMap params={parseDraftBySchema(draft, plugin.paramSchema)} />
         </div>
         {/* Form */}
         <div className="flex-1 md:w-1/2">
-          <CourseSettingsForm />
+          <CourseSettingsForm draft={draft} setDraft={setDraft} />
         </div>
       </div>
     </div>
   );
 }
 
-function CourseSettingsForm() {
+function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>; setDraft: (d: Record<string, string>) => void }) {
   const t = useT();
   const lang = useLang();
   const type = useCourseStore((s) => s.type);
-  const params = useCourseStore((s) => s.params);
   const setType = useCourseStore((s) => s.setType);
-  const setParams = useCourseStore((s) => s.setParams);
-
-  const [draft, setDraft] = useState<Record<string, string>>({});
-  useEffect(() => {
-    const obj: Record<string, string> = {};
-    Object.entries(params).forEach(([k, v]) => {
-      obj[k] = v != null ? String(v) : '';
-    });
-    setDraft(obj);
-  }, [type]);
-
   const plugin = registry[type];
 
   // 移除自定义样式，使用UI组件的默认样式
 
   const onNumChange = (k: string) => (e: ChangeEvent<HTMLInputElement>) => {
-    setDraft((d) => ({ ...d, [k]: e.target.value }));
+    setDraft({ ...draft, [k]: e.target.value });
+  };
+
+  const onNumBlur = (k: string) => () => {
+    const raw = draft[k];
+    const n = Number(raw);
+    const decimals = (plugin.paramSchema as any)[k]?.decimals;
+    if (isNaN(n)) {
+      setDraft({ ...draft, [k]: '' });
+    } else if (typeof decimals === 'number') {
+      setDraft({ ...draft, [k]: n.toFixed(decimals) });
+    } else {
+      setDraft({ ...draft, [k]: String(Math.round(n)) });
+    }
   };
 
   const adjust = (k: string, delta: number) => {
-    setDraft((d) => {
-      const cur = Number(d[k] ?? params[k] ?? 0);
-      const step = (plugin.paramSchema as any)[k]?.step ?? 1;
-      const val = cur + delta;
-      if (!Number.isNaN(val)) setParams({ [k]: val });
-      return { ...d, [k]: String(val) };
-    });
+    const cur = Number(draft[k] ?? 0);
+    const step = (plugin.paramSchema as any)[k]?.step ?? 1;
+    const decimals = (plugin.paramSchema as any)[k]?.decimals;
+    let val = cur + delta;
+    if (typeof decimals === 'number') {
+      setDraft({ ...draft, [k]: val.toFixed(decimals) });
+    } else {
+      setDraft({ ...draft, [k]: String(Math.round(val)) });
+    }
   };
 
   const commitField = (k: string) => {
     const raw = draft[k];
     if (raw === '') return;
     const num = Number(raw);
-    if (!Number.isNaN(num)) setParams({ [k]: num });
+    if (!Number.isNaN(num)) setDraft({ ...draft, [k]: String(num) });
   };
 
   return (
@@ -171,10 +217,16 @@ function CourseSettingsForm() {
           </SelectContent>
         </Select>
       </label>
-
       {/* Parameters */}
       {plugin.SettingsPanel ? (
-        <plugin.SettingsPanel params={params} setParams={setParams} />
+        <plugin.SettingsPanel params={draft} setParams={(patch: Partial<typeof draft>) => {
+          // 只合并 string 类型
+          const filtered: Record<string, string> = {};
+          Object.entries(patch).forEach(([k, v]) => {
+            if (typeof v === 'string') filtered[k] = v;
+          });
+          setDraft({ ...draft, ...filtered });
+        }} />
       ) : (
         Object.entries(plugin.paramSchema).map(([k, cfg]: any) => {
           const step = cfg.step ?? 1;
@@ -191,9 +243,9 @@ function CourseSettingsForm() {
               </Button>
               <Input
                 type="number"
-                value={draft[k] ?? String(params[k] ?? '')}
+                value={draft[k] ?? ''}
                 onChange={onNumChange(k)}
-                onBlur={() => commitField(k)}
+                onBlur={onNumBlur(k)}
                 step={step}
                 className="w-24 text-center"
               />
@@ -216,18 +268,14 @@ function CourseSettingsForm() {
 /**
  * 预览小地图，实时根据当前航线参数绘制缩略图。
  */
-function PreviewMap() {
+function PreviewMap({ params }: { params: Record<string, string> }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const groupRef = useRef<L.FeatureGroup | null>(null);
 
-  const [courseUp, setCourseUp] = useState(false); // false: north-up, true: course-up
-
   const type = useCourseStore((s) => s.type);
-  const params = useCourseStore((s) => s.params);
-
   const axisNum = Number((params as any)?.axis ?? 0);
-
+  const [courseUp, setCourseUp] = useState(false); // false: north-up, true: course-up
   const bearing = courseUp ? -axisNum : 0;
 
   // init map once
@@ -254,7 +302,7 @@ function PreviewMap() {
       (mapRef.current as any).setBearing(bearing);
     }
     // blank background
-    (containerRef.current as HTMLElement).style.background = '#f9f9f9';
+    (containerRef.current as HTMLElement).style.background = '#e5e7eb'; // Tailwind gray-200
   }, []);
 
   // update map bearing when bearing state changes

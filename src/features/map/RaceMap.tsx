@@ -15,7 +15,8 @@ import { useGpsWatch } from '@features/map/hooks/useGpsWatch';
 import { useMqttPosSync } from '@features/mqtt/hooks/useMqttPosSync';
 import { useCourseDraw } from '@features/map/hooks/useCourseDraw';
 import { useCourseStore } from '@features/course/store';
-import TopBar from '@features/map/components/TopBar';
+import TopBar from './components/TopBar';
+import OnlineCount from './components/OnlineCount';
 import SideToolbar from '@features/map/components/SideToolbar';
 import SettingsSheet from '@features/map/components/SettingsSheet';
 import ErrorBanner from '@features/map/components/ErrorBanner';
@@ -205,7 +206,10 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   return (
     <div className="relative w-screen h-screen">
       <div id="map-root" className="w-full h-full" />
-      <TopBar title={courseId} onlineCount={observers.length} />
+      <TopBar 
+        center={courseId} 
+        right={<OnlineCount count={observers.length} />} 
+      />
       <ObserversLayer observers={observers} map={mapRef.current} />
       {!isAdmin && (
         <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>

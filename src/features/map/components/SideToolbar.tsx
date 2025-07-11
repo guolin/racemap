@@ -1,5 +1,7 @@
 'use client';
 import React from 'react';
+import { FiAlertCircle, FiSettings } from 'react-icons/fi';
+import { TbLocation } from 'react-icons/tb';
 import { useT } from 'src/locale';
 
 interface Props {
@@ -39,14 +41,14 @@ const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings, onInfo })
       }}
     >
       <button style={btnStyle} title={t('common.locate_tooltip')} onClick={onLocate}>
-        <img src="/icons/locate.svg" alt={t('common.locate_tooltip')} style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+        <TbLocation style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
       </button>
       <button style={btnStyle} title={t('common.info_tooltip')} onClick={onInfo}>
-        <img src="/icons/information.svg" alt={t('common.info_tooltip')} style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+        <FiAlertCircle style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
       </button>
       {isAdmin && (
         <button style={btnStyle} onClick={onSettings} title={t('common.settings_tooltip')}>
-          <img src="/icons/setting.svg" alt={t('common.settings_tooltip')} style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+          <FiSettings style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
         </button>
       )}
     </div>

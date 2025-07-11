@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import TopBar from '../../src/features/map/components/TopBar';
 import { watchPositionThrottled, clearWatch as clearGeoWatch } from '../../utils/geoThrottle';
 
 interface LogEntry {
@@ -207,101 +208,104 @@ export default function GpsDebugPage() {
   }, [tracking]);
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1 style={{ marginBottom: 12 }}>GPS 调试 /logs</h1>
+    <>
+      <TopBar center="GPS 调试" />
+      <div style={{ padding: 16, marginTop: 56 }}>
+        <h1 style={{ marginBottom: 12 }}>GPS 调试 /logs</h1>
 
-      {errorMsg && (
-        <div style={{ color: '#c00', marginBottom: 12 }}>{errorMsg}</div>
-      )}
+        {errorMsg && (
+          <div style={{ color: '#c00', marginBottom: 12 }}>{errorMsg}</div>
+        )}
 
-      {/* 开始/停止按钮 */}
-      <button
-        onClick={handleToggleTracking}
-        style={{
-          padding: '8px 16px',
-          marginBottom: 12,
-          border: 'none',
-          borderRadius: 8,
-          background: tracking ? '#dc3545' : '#28a745',
-          color: '#fff',
-          cursor: 'pointer',
-        }}
-      >
-        {tracking ? '停止定位' : '开始定位'}
-      </button>
+        {/* 开始/停止按钮 */}
+        <button
+          onClick={handleToggleTracking}
+          style={{
+            padding: '8px 16px',
+            marginBottom: 12,
+            border: 'none',
+            borderRadius: 8,
+            background: tracking ? '#dc3545' : '#28a745',
+            color: '#fff',
+            cursor: 'pointer',
+          }}
+        >
+          {tracking ? '停止定位' : '开始定位'}
+        </button>
 
-      {/* 单次重新获取按钮 */}
-      <button
-        onClick={fetchOnce}
-        style={{
-          padding: '8px 16px',
-          marginBottom: 12,
-          marginLeft: 12,
-          border: 'none',
-          borderRadius: 8,
-          background: '#0078ff',
-          color: '#fff',
-          cursor: 'pointer',
-        }}
-      >
-        重新获取
-      </button>
+        {/* 单次重新获取按钮 */}
+        <button
+          onClick={fetchOnce}
+          style={{
+            padding: '8px 16px',
+            marginBottom: 12,
+            marginLeft: 12,
+            border: 'none',
+            borderRadius: 8,
+            background: '#0078ff',
+            color: '#fff',
+            cursor: 'pointer',
+          }}
+        >
+          重新获取
+        </button>
 
-      {/* 当前最新数据 */}
-      {logs.length > 0 && (() => {
-        const latest = logs[logs.length - 1]!;
-        return (
-          <div style={{ marginBottom: 16 }}>
-            <strong>最新：</strong>
-            {new Date(latest.timestamp).toLocaleTimeString()} |{' '}
-            {latest.lat.toFixed(5)}, {latest.lng.toFixed(5)} |{' '}
-            {latest.speedKts != null ? latest.speedKts.toFixed(1) + ' kt' : '--'} |{' '}
-            {latest.headingDeg != null ? Math.round(latest.headingDeg) + '° (' + latest.sourceHeading + ')' : '--'}
-          </div>
-        );
-      })()}
+        {/* 当前最新数据 */}
+        {logs.length > 0 && (() => {
+          const latest = logs[logs.length - 1]!;
+          return (
+            <div style={{ marginBottom: 16 }}>
+              <strong>最新：</strong>
+              {new Date(latest.timestamp).toLocaleTimeString()} |{' '}
+              {latest.lat.toFixed(5)}, {latest.lng.toFixed(5)} |{' '}
+              {latest.speedKts != null ? latest.speedKts.toFixed(1) + ' kt' : '--'} |{' '}
+              {latest.headingDeg != null ? Math.round(latest.headingDeg) + '° (' + latest.sourceHeading + ')' : '--'}
+            </div>
+          );
+        })()}
 
-      {/* 日志列表 */}
-      <div
-        style={{
-          maxHeight: '70vh',
-          overflowY: 'auto',
-          border: '1px solid #ddd',
-          borderRadius: 4,
-          fontFamily: 'monospace',
-          padding: 8,
-          lineHeight: 1.4,
-          fontSize: 12,
-        }}
-      >
-        {logs.map((l, idx) => (
-          <div key={idx}>
-            {new Date(l.timestamp).toLocaleTimeString('en-US', { hour12: false })} | {l.lat.toFixed(6)},{' '}
-            {l.lng.toFixed(6)} | {l.speedKts != null ? l.speedKts.toFixed(2) + 'kt' : '--'} |{' '}
-            {l.headingDeg != null ? Math.round(l.headingDeg) + '° (' + l.sourceHeading + ')' : '--'}
-          </div>
-        ))}
-      </div>
-
-      {/* 错误列表 */}
-      {errorLogs.length > 0 && (
+        {/* 日志列表 */}
         <div
           style={{
-            maxHeight: 200,
+            maxHeight: '70vh',
             overflowY: 'auto',
-            border: '1px solid #f99',
+            border: '1px solid #ddd',
             borderRadius: 4,
-            background: '#fff4f4',
+            fontFamily: 'monospace',
             padding: 8,
-            marginTop: 12,
+            lineHeight: 1.4,
             fontSize: 12,
           }}
         >
-          {errorLogs.map((e, idx) => (
-            <div key={idx} style={{ color: '#c00' }}>{e}</div>
+          {logs.map((l, idx) => (
+            <div key={idx}>
+              {new Date(l.timestamp).toLocaleTimeString('en-US', { hour12: false })} | {l.lat.toFixed(6)},{' '}
+              {l.lng.toFixed(6)} | {l.speedKts != null ? l.speedKts.toFixed(2) + 'kt' : '--'} |{' '}
+              {l.headingDeg != null ? Math.round(l.headingDeg) + '° (' + l.sourceHeading + ')' : '--'}
+            </div>
           ))}
         </div>
-      )}
-    </div>
+
+        {/* 错误列表 */}
+        {errorLogs.length > 0 && (
+          <div
+            style={{
+              maxHeight: 200,
+              overflowY: 'auto',
+              border: '1px solid #f99',
+              borderRadius: 4,
+              background: '#fff4f4',
+              padding: 8,
+              marginTop: 12,
+              fontSize: 12,
+            }}
+          >
+            {errorLogs.map((e, idx) => (
+              <div key={idx} style={{ color: '#c00' }}>{e}</div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 } 
