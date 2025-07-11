@@ -47,7 +47,7 @@ const TopBar: React.FC<TopBarProps> = ({
         size="icon"
         onClick={handleHome}
         aria-label={t('common.home')}
-        className="text-foreground hover:bg-gray-200"
+        className="text-foreground"
       >
         <GoHome style={{ width: 24, height: 24 }} />
       </Button>
