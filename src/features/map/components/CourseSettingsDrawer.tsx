@@ -309,10 +309,6 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
   useEffect(() => {
     if (mapRef.current && (mapRef.current as any).setBearing) {
       (mapRef.current as any).setBearing(bearing, { animate: true });
-      // fit bounds after rotation to keep course visible
-      if (groupRef.current && groupRef.current.getBounds().isValid()) {
-        mapRef.current.fitBounds(groupRef.current.getBounds(), { padding: [10, 10] });
-      }
     }
   }, [bearing]);
 
@@ -332,11 +328,6 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
 
     const newGroup = plugin.draw(mapRef.current, origin, params, null);
     groupRef.current = newGroup;
-
-    // fit bounds
-    if (newGroup && newGroup.getBounds && newGroup.getBounds().isValid()) {
-      mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
-    }
   }, [type, params]);
 
   return (
