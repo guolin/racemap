@@ -72,10 +72,6 @@ export default function TimerPage() {
     <>
       <TopBar center="TIMER" right={<Clock />} />
       <div className="max-w-2xl mx-auto p-4 space-y-6 mt-16">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Timer 计时工具</h1>
-          <span className="tabular-nums font-mono text-2xl">{nowStr}</span>
-        </div>
 
         {/* Warning Signal */}
         <div>

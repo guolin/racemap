@@ -303,6 +303,19 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
     }
     // blank background
     (containerRef.current as HTMLElement).style.background = '#e5e7eb'; // Tailwind gray-200
+    
+    // 初始化时绘制航线并调整视图
+    const plugin = registry[type];
+    if (plugin) {
+      const origin = L.latLng(0, 0);
+      const newGroup = plugin.draw(mapRef.current, origin, params, null);
+      groupRef.current = newGroup;
+      
+      // 自动调整视图让航线充满全屏
+      if (newGroup && newGroup.getBounds && newGroup.getBounds().isValid()) {
+        mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
+      }
+    }
   }, []);
 
   // update map bearing when bearing state changes
@@ -328,6 +341,11 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
 
     const newGroup = plugin.draw(mapRef.current, origin, params, null);
     groupRef.current = newGroup;
+
+    // 自动调整视图让航线充满全屏
+    if (newGroup && newGroup.getBounds && newGroup.getBounds().isValid()) {
+      mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
+    }
   }, [type, params]);
 
   return (
