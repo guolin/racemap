@@ -29,17 +29,25 @@ const LangContext = createContext<LangContextValue>({
 let globalLang: Lang = 'en';
 export const getCurrentLang = () => globalLang;
 
+// 检测用户语言偏好的函数，供外部使用
+export const detectUserLanguage = (): Lang => {
+  if (typeof window === 'undefined') return 'en';
+  
+  // 优先检查 localStorage
+  const stored = localStorage.getItem('lang') as Lang | null;
+  if (stored === 'zh' || stored === 'en') return stored;
+  
+  // 检查浏览器语言偏好
+  const zhLike = (navigator.languages || [navigator.language]).some((l) => 
+    l.toLowerCase().startsWith('zh')
+  );
+  return zhLike ? 'zh' : 'en';
+};
+
 // ---------------- Provider ----------------
 export const LangProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const detectInitialLang = (): Lang => {
-    if (typeof window === 'undefined') return 'en';
-    const stored = localStorage.getItem('lang') as Lang | null;
-    if (stored === 'zh' || stored === 'en') return stored;
-    const zhLike = (navigator.languages || [navigator.language]).some((l) => l.toLowerCase().startsWith('zh'));
-    return zhLike ? 'zh' : 'en';
-  };
-
-  const [lang, setLang] = useState<Lang>(detectInitialLang);
+  // 初始状态固定为 'en'，避免服务端渲染水合错误
+  const [lang, setLang] = useState<Lang>('en');
 
   // 把语言写入 localStorage，并同步到全局变量供非 React 场景使用
   useEffect(() => {

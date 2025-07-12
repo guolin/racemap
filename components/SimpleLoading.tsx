@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useLang } from 'src/locale';
+import { useEffect, useState, useRef } from 'react';
+import { useLang, useSetLang, detectUserLanguage } from 'src/locale';
 
 interface SimpleLoadingProps {
   onLoadingComplete?: () => void;
@@ -13,15 +13,29 @@ export default function SimpleLoading({
 }: SimpleLoadingProps) {
   const [isVisible, setIsVisible] = useState(true);
   const lang = useLang();
+  const setLang = useSetLang();
+  const langInitialized = useRef(false);
 
   useEffect(() => {
+    // 只在第一次运行时检测语言偏好
+    if (!langInitialized.current) {
+      const detectedLang = detectUserLanguage();
+      
+      // 如果检测到的语言与当前语言不同，则切换语言
+      if (detectedLang !== lang) {
+        setLang(detectedLang);
+      }
+      
+      langInitialized.current = true;
+    }
+
     const timer = setTimeout(() => {
       setIsVisible(false);
       onLoadingComplete?.();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onLoadingComplete]);
+  }, [duration, onLoadingComplete, lang, setLang]);
 
   if (!isVisible) return null;
 
