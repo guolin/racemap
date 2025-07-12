@@ -6,8 +6,6 @@ import { getMyRaceId } from '../utils/race';
 import { Button } from '@components/components/ui/button';
 import { Input } from '@components/components/ui/input';
 import Head from 'next/head';
-import VersionInfo from '../components/VersionInfo';
-import SimpleLoading from '../components/SimpleLoading';
 
 export default function Home() {
   const router = useRouter();
@@ -104,9 +102,6 @@ export default function Home() {
             {t('home.about')}
           </div>
         </div>
-
-        {/* 版本信息 */}
-        <VersionInfo />
       </main>
     </>
   );
