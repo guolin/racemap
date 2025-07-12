@@ -7,6 +7,7 @@ import { Button } from '@components/components/ui/button';
 import { Input } from '@components/components/ui/input';
 import Head from 'next/head';
 import VersionInfo from '../components/VersionInfo';
+import SimpleLoading from '../components/SimpleLoading';
 
 export default function Home() {
   const router = useRouter();
@@ -15,10 +16,15 @@ export default function Home() {
   const setLang = useSetLang();
   const [code, setCode] = useState('');
   const [myId, setMyId] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setMyId(getMyRaceId());
   }, []);
+
+  const handleLoadingComplete = () => {
+    setIsLoading(false);
+  };
 
   const appName = lang === 'zh' ? '锚工' : 'Anchor Guru';
 
@@ -27,6 +33,7 @@ export default function Home() {
       <Head>
         <title>{appName}</title>
       </Head>
+      {isLoading && <SimpleLoading onLoadingComplete={handleLoadingComplete} />}
       <main className="min-h-screen bg-background text-foreground px-4 pt-6">
         {/* 顶部logo插画 */}
         <div className="flex flex-col items-center mb-6">
