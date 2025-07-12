@@ -15,7 +15,7 @@ interface Options {
   onRecvCourse?: (c: { type: string; params: Record<string, any> }) => void;
 }
 
-const posTopic = (id: string) => `sailing/${id}/pos`;
+const posTopic = (id: string) => `race/${id}/location/admin`;
 
 /**
  * 封装 MQTT 连接 / 船位订阅 / 管理员定时发布。

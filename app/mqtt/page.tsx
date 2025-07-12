@@ -5,8 +5,9 @@ import TopBar from '../../src/features/map/components/TopBar';
 import { getMqttClient } from '@features/mqtt/service';
 import { Button } from '@components/components/ui/button';
 
-const posTopic = (id: string) => `sailing/${id}/pos`;
-const routeTopic = (id: string) => `sailing/${id}/route`;
+const posTopic = (id: string) => `race/${id}/location/admin`;
+const routeTopic = (id: string) => `race/${id}/route`;
+const locationTopic = (id: string) => `race/${id}/location/#`;
 
 interface LogEntry {
   ts?: number;
@@ -53,7 +54,7 @@ export default function MqttDebugPage() {
   const handleSubscribe = () => {
     if (!clientRef.current || !raceId || raceId.length !== 6) return;
     if (subscribedRef.current) return;
-    const topics = [posTopic(raceId), routeTopic(raceId)];
+    const topics = [locationTopic(raceId), routeTopic(raceId)];
     topics.forEach((t) => {
       clientRef.current.subscribe(t, { qos: 0 }, (err: any) => {
         if (err) pushLog({ type: 'sys', msg: `[sub err] ${t}` });

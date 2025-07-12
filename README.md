@@ -73,7 +73,7 @@ utils/
 
 | 角色       | 功能描述                                                                                           |
 | ---------- | -------------------------------------------------------------------------------------------------- |
-| 裁判长（管理员） | 持续监听 **Geolocation**，每 15 秒将最新位置 & 航线信息发布至 `sailing/{courseId}/pos`（MQTT Retain）。 |
+| 裁判长（管理员） | 持续监听 **Geolocation**，每 15 秒将最新位置 & 航线信息发布至 `race/{courseId}/location/admin`（MQTT Retain）。 |
 | 普通裁判   | 订阅同一 Topic，实时渲染裁判船位置；自身位置仅本地渲染，不对外广播。                                   |
 
 ### 数据格式
@@ -95,8 +95,8 @@ utils/
 
 ## 主题（Topic）设计
 
-- 位置/航线：`sailing/{courseId}/pos`
-- 预留：`sailing/{courseId}/route`
+- 位置/航线：`race/{courseId}/location/admin`
+- 预留：`race/{courseId}/route`
 
 > courseId 由 6 位 **Base36 大写字母/数字** 组成，首次进入网站自动生成并缓存于浏览器 LocalStorage。
 
@@ -149,7 +149,7 @@ client.on('connect', () => {
       course: { axis: 40, distance_nm: 0.9, start_line_m: 100 },
       timestamp: Date.now(),
     };
-    client.publish(`sailing/${cid}/pos`, JSON.stringify(payload), { retain: true });
+    client.publish(`race/${cid}/location/admin`, JSON.stringify(payload), { retain: true });
     console.log('pub', payload);
   }, 3000);
 });

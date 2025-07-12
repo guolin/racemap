@@ -24,6 +24,9 @@ export function useObserversPos({ raceId, observerId }: Options) {
   const [observers, setObservers] = useState<Record<string, ObserverPos>>({});
   const observersRef = useRef(observers);
 
+  // 确保 observersRef.current 始终是最新的
+  observersRef.current = observers;
+
   useEffect(() => {
     if (!client) return;
 
@@ -43,6 +46,7 @@ export function useObserversPos({ raceId, observerId }: Options) {
 
       try {
         const data = JSON.parse(new TextDecoder().decode(payload));
+        
         if (typeof data.lat !== 'number' || typeof data.lng !== 'number') {
           return;
         }
@@ -71,11 +75,11 @@ export function useObserversPos({ raceId, observerId }: Options) {
           return cleaned;
         });
       } catch (e) {
-        // 忽略解析错误
+        console.error('[useObserversPos] Error parsing payload:', e);
       }
     };
 
-    client.subscribe(topicFilter);
+    client.subscribe(topicFilter, { qos: 0 });
     client.on('message', onMsg);
 
     return () => {
@@ -84,5 +88,6 @@ export function useObserversPos({ raceId, observerId }: Options) {
     };
   }, [client, raceId, observerId]);
 
-  return Object.values(observersRef.current);
+  const result = Object.values(observers);
+  return result;
 } 
