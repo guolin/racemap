@@ -15,6 +15,7 @@ import { useGpsWatch } from '@features/map/hooks/useGpsWatch';
 import { useMqttPosSync } from '@features/mqtt/hooks/useMqttPosSync';
 import { useCourseDraw } from '@features/map/hooks/useCourseDraw';
 import { useCourseStore } from '@features/course/store';
+import { useViewportHeight } from '@features/map/hooks/useViewportHeight';
 import TopBar from './components/TopBar';
 import OnlineCount from './components/OnlineCount';
 import SideToolbar from '@features/map/components/SideToolbar';
@@ -28,6 +29,7 @@ import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublis
 import { useObserversPos } from '@features/mqtt/hooks/useObserversPos';
 import { ObserversLayer } from '@features/map/components/ObserversLayer';
 import CourseSettingsDrawer from '@features/map/components/CourseSettingsDrawer';
+import BottomInfoCards from '@features/map/components/BottomInfoCards';
 
 interface Props {
   courseId: string;
@@ -37,6 +39,9 @@ interface Props {
 export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const mapRef = useLeafletMap('map-root');
+  
+  // 使用动态视口高度
+  const viewportHeight = useViewportHeight();
 
   // ---- Course params ----
   const {
@@ -204,7 +209,10 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   };
 
   return (
-    <div className="relative w-screen h-screen">
+    <div 
+      className="relative w-screen" 
+      style={{ height: viewportHeight > 0 ? viewportHeight : '100vh' }}
+    >
       <div id="map-root" className="w-full h-full" />
       <TopBar 
         center={courseId} 
@@ -254,10 +262,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       />
       <ErrorBanner message={gps.errorMsg} />
       <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = courseAxis||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
-      <div style={{ position:'absolute', bottom:20, left:'50%', transform:'translateX(-50%)', display:'flex', gap:12, zIndex:1000 }}>
-        <InfoCard title="COURSE AXIS" value={`${courseAxisNum}°M`} />
-        <InfoCard title="COURSE SIZE" value={`${courseSizeNm.toFixed(1)}NM`} />
-      </div>
+      <BottomInfoCards courseAxis={courseAxisNum} courseSizeNm={courseSizeNm} />
     </div>
   );
 }

@@ -12,6 +12,8 @@
   "common.decrease": "-",
   "common.increase": "+",
   "common.select_course_type": "Select course type",
+  "common.direction": "Direction",
+  "common.distance": "Distance",
   "home.title": "Sailing Judge Tool",
   "home.input_placeholder": "Enter room code",
   "home.join_race": "Join race",

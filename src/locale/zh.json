@@ -12,6 +12,8 @@
   "common.decrease": "减少",
   "common.increase": "增加",
   "common.select_course_type": "选择航线类型",
+  "common.direction": "方向",
+  "common.distance": "距离",
   "home.title": "帆船裁判工具",
   "home.input_placeholder": "输入房间码",
   "home.join_race": "加入比赛",
