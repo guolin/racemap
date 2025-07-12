@@ -3,7 +3,6 @@ import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { IoArrowBackOutline } from 'react-icons/io5';
 import { useT } from 'src/locale';
 import L from 'leaflet';
-import CompassButton from '@features/map/components/CompassButton';
 import { useCourseStore } from '@features/course/store';
 import { registry, allCoursePlugins, CourseTypeId } from '@features/course/plugins/registry';
 import { useLang } from 'src/locale';
@@ -274,35 +273,64 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
   const groupRef = useRef<L.FeatureGroup | null>(null);
 
   const type = useCourseStore((s) => s.type);
-  const axisNum = Number((params as any)?.axis ?? 0);
-  const [courseUp, setCourseUp] = useState(false); // false: north-up, true: course-up
-  const bearing = courseUp ? -axisNum : 0;
 
   // init map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     mapRef.current = L.map(containerRef.current, {
       dragging: true,
-      zoomControl: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
+      zoomControl: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
       boxZoom: false,
       keyboard: false,
-      touchZoom: true,
+      touchZoom: false,
       attributionControl: false,
-      rotate: true,
+      rotate: false,
       rotateControl: false,
     } as any).setView([0, 0], 13);
-    // remove any rotate control dom if injected
-    (containerRef.current.parentElement as HTMLElement)
-      ?.querySelector('.leaflet-control-rotate')
-      ?.remove();
-    // initial bearing
-    if ((mapRef.current as any).setBearing) {
-      (mapRef.current as any).setBearing(bearing);
-    }
     // blank background
     (containerRef.current as HTMLElement).style.background = '#e5e7eb'; // Tailwind gray-200
+    
+    // 添加自动缩放按钮
+    const FitBoundsControl = L.Control.extend({
+      options: {
+        position: 'topleft'
+      },
+      onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        const button = L.DomUtil.create('a', 'leaflet-control-zoom-in', container);
+        button.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>`;
+        button.title = '自动缩放';
+        // 调整按钮和SVG样式
+        button.style.width = '30px';
+        button.style.height = '30px';
+        button.style.display = 'flex';
+        button.style.alignItems = 'center';
+        button.style.justifyContent = 'center';
+        button.style.padding = '0';
+        button.style.margin = '0';
+        const svg = button.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('width', '20');
+          svg.setAttribute('height', '20');
+          svg.style.display = 'block';
+          svg.style.margin = 'auto';
+        }
+        
+        L.DomEvent.on(button, 'click', L.DomEvent.stopPropagation)
+          .on(button, 'click', L.DomEvent.preventDefault)
+          .on(button, 'click', () => {
+            if (groupRef.current && groupRef.current.getBounds && groupRef.current.getBounds().isValid()) {
+              mapRef.current?.fitBounds(groupRef.current.getBounds(), { padding: [10, 10] });
+            }
+          });
+        
+        return container;
+      }
+    });
+    
+    new FitBoundsControl().addTo(mapRef.current);
     
     // 初始化时绘制航线并调整视图
     const plugin = registry[type];
@@ -318,14 +346,19 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
     }
   }, []);
 
-  // update map bearing when bearing state changes
-  useEffect(() => {
-    if (mapRef.current && (mapRef.current as any).setBearing) {
-      (mapRef.current as any).setBearing(bearing, { animate: true });
-    }
-  }, [bearing]);
 
-  // redraw when params change
+
+  // 自动缩放：只在首次进入和航线切换时
+  useEffect(() => {
+    if (!mapRef.current || !groupRef.current) return;
+    
+    // 自动调整视图让航线充满全屏
+    if (groupRef.current.getBounds && groupRef.current.getBounds().isValid()) {
+      mapRef.current.fitBounds(groupRef.current.getBounds(), { padding: [10, 10] });
+    }
+  }, [type]); // 只在航线类型变化时触发
+
+  // 重绘：所有参数变化都重绘航线
   useEffect(() => {
     if (!mapRef.current) return;
     const plugin = registry[type];
@@ -341,20 +374,10 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
 
     const newGroup = plugin.draw(mapRef.current, origin, params, null);
     groupRef.current = newGroup;
-
-    // 自动调整视图让航线充满全屏
-    if (newGroup && newGroup.getBounds && newGroup.getBounds().isValid()) {
-      mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
-    }
-  }, [type, params]);
+  }, [type, params]); // 航线类型和参数变化都重绘
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <CompassButton
-        bearing={bearing}
-        top={16}
-        onToggle={() => setCourseUp(prev => !prev)}
-      />
     </div>
   );
 } 
