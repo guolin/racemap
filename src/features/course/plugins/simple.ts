@@ -11,7 +11,7 @@ export interface SimpleParams {
 
 const paramSchema = {
   axis: { type: 'number', min: 0, max: 360, step: 5 },
-  distanceNm: { type: 'number', min: 0, step: 0.1 },
+  distanceNm: { type: 'number', min: 0, step: 0.05, decimals: 2 },
   startLineM: { type: 'number', min: 0, step: 10 },
 };
 
