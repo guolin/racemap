@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
 import { CoursePlugin } from './CoursePlugin';
 import { getCurrentLang } from 'src/locale';
+import { createMarkIcon } from '../lib/markIcon';
 
 export interface SimpleParams {
   axis: number;      // degrees
@@ -104,9 +105,10 @@ export const simpleCoursePlugin: CoursePlugin<SimpleParams> = {
 
     const lang = getCurrentLang();
     const tooltips = simpleCoursePlugin.i18n![lang].tooltips;
-    const originMarker = L.circleMarker(origin, markStyle).bindTooltip(tooltips.origin);
-    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip(tooltips.startMark);
-    const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip(tooltips.mark1);
+    // 标的名字最多两个字符
+    const originMarker = L.marker(origin, { icon: createMarkIcon('S') }).bindTooltip(tooltips.origin);
+    const startMarkMarker = L.marker(startMark as [number, number], { icon: createMarkIcon('P') }).bindTooltip(tooltips.startMark);
+    const mark1Marker = L.marker(mark1 as [number, number], { icon: createMarkIcon('1') }).bindTooltip(tooltips.mark1);
 
     group.addLayer(startLine);
     group.addLayer(courseLine);

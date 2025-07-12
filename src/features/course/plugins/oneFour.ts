@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
 import { CoursePlugin } from './CoursePlugin';
 import { getCurrentLang } from 'src/locale';
+import { createMarkIcon } from '../lib/markIcon';
 
 export interface OneFourParams {
   axis: number;       // degrees
@@ -104,21 +105,22 @@ export const oneFourPlugin: CoursePlugin<OneFourParams> = {
     const gateLine  = L.polyline([fourP, fourS], { color: '#2ca02c', weight: 3 });
 
     // markers style
-    const markStyle: L.CircleMarkerOptions = {
-      radius: 6,
-      color: '#000',
-      weight: 1,
-      fillColor: '#fff',
-      fillOpacity: 1,
-    };
+    // const markStyle: L.CircleMarkerOptions = {
+    //   radius: 6,
+    //   color: '#000',
+    //   weight: 1,
+    //   fillColor: '#fff',
+    //   fillOpacity: 1,
+    // };
 
     const lang = getCurrentLang();
     const tooltips = oneFourPlugin.i18n![lang].tooltips;
-    const originMarker = L.circleMarker(origin, markStyle).bindTooltip(tooltips.origin);
-    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip(tooltips.startMark);
-    const mark1Marker = L.circleMarker(mark1, markStyle).bindTooltip(tooltips.mark1);
-    const fourPMarker = L.circleMarker(fourP, markStyle).bindTooltip(tooltips.fourP);
-    const fourSMarker = L.circleMarker(fourS, markStyle).bindTooltip(tooltips.fourS);
+    // 标的名字最多两个字符
+    const originMarker = L.marker(origin, { icon: createMarkIcon('S') }).bindTooltip(tooltips.origin);
+    const startMarkMarker = L.marker(startMark as [number, number], { icon: createMarkIcon('P') }).bindTooltip(tooltips.startMark);
+    const mark1Marker = L.marker(mark1, { icon: createMarkIcon('1') }).bindTooltip(tooltips.mark1);
+    const fourPMarker = L.marker(fourP, { icon: createMarkIcon('4P') }).bindTooltip(tooltips.fourP);
+    const fourSMarker = L.marker(fourS, { icon: createMarkIcon('4S') }).bindTooltip(tooltips.fourS);
 
     g.addLayer(startLine);
     g.addLayer(courseLine);

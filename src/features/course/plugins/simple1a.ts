@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { destinationPoint } from '@shared/lib/geo';
 import { CoursePlugin } from './CoursePlugin';
 import { getCurrentLang } from 'src/locale';
+import { createMarkIcon } from '../lib/markIcon';
 
 export interface Simple1aParams {
   axis: number;          // 航向 (°M)
@@ -127,16 +128,11 @@ export const simple1aPlugin: CoursePlugin<Simple1aParams> = {
 
     const lang = getCurrentLang();
     const tooltips = simple1aPlugin.i18n![lang].tooltips;
-    const originMarker = L.circleMarker(origin, markStyle).bindTooltip(tooltips.origin);
-    const startMarkMarker = L.circleMarker(startMark as [number, number], markStyle).bindTooltip(tooltips.startMark);
-    const mark1Marker = L.circleMarker(mark1 as [number, number], markStyle).bindTooltip(tooltips.mark1);
-
-    const mark1aStyle: L.CircleMarkerOptions = {
-      ...markStyle,
-      color: '#d62728',
-      fillColor: '#d62728',
-    };
-    const mark1aMarker = L.circleMarker(mark1a as [number, number], mark1aStyle).bindTooltip(tooltips.mark1a);
+    // 标的名字最多两个字符
+    const originMarker = L.marker(origin, { icon: createMarkIcon('S') }).bindTooltip(tooltips.origin);
+    const startMarkMarker = L.marker(startMark as [number, number], { icon: createMarkIcon('P') }).bindTooltip(tooltips.startMark);
+    const mark1Marker = L.marker(mark1 as [number, number], { icon: createMarkIcon('1') }).bindTooltip(tooltips.mark1);
+    const mark1aMarker = L.marker(mark1a as [number, number], { icon: createMarkIcon('1A', { color: '#d62728' }) }).bindTooltip(tooltips.mark1a);
 
     group.addLayer(startLine);
     group.addLayer(courseLine);
