@@ -59,7 +59,7 @@ const TopBar: React.FC<TopBarProps> = ({
       {/* 左侧区域 */}
       <div className="flex items-center gap-2">{left ?? defaultLeft}</div>
       {/* 中间区域绝对居中 */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-lg truncate max-w-[60vw] text-center pointer-events-none select-none">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-lg truncate max-w-[60vw] text-center select-none">
         {center}
       </div>
       {/* 右侧区域始终贴右 */}

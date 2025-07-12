@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { GpsProvider } from "../context/GpsContext";
 import { LangProvider } from 'src/locale';
+import { Toaster } from '@components/components/ui/sonner';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <LangProvider>
           <GpsProvider>
             {children}
+            <Toaster />
           </GpsProvider>
         </LangProvider>
       </body>

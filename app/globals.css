@@ -43,7 +43,28 @@ html,body,#map-root {
   position: relative;
 }
 
+/* Sonner toast 居中显示 */
+[data-sonner-toaster] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  bottom: auto !important;
+  right: auto !important;
+}
 
+/* 确保toast内容也居中 */
+[data-sonner-toaster] [data-sonner-toast] {
+  margin: 0 auto !important;
+  text-align: center !important;
+}
+
+/* 确保toast容器内的所有元素都居中 */
+[data-sonner-toaster] > div {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
 
 * {
   box-sizing: border-box;

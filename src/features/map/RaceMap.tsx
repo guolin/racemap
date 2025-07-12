@@ -9,6 +9,8 @@ if (typeof window !== 'undefined') {
 
 import { useRef, useState, useEffect } from 'react';
 import L from 'leaflet';
+import { toast } from 'sonner';
+import { GoShareAndroid } from 'react-icons/go';
 import { useLeafletMap } from '@features/map/hooks/useLeaflet';
 import { useDeviceOrientation } from '@features/map/hooks/useDeviceOrientation';
 import { useGpsWatch } from '@features/map/hooks/useGpsWatch';
@@ -30,6 +32,8 @@ import { useObserversPos, ObserverPos } from '@features/mqtt/hooks/useObserversP
 import { ObserversLayer } from '@features/map/components/ObserversLayer';
 import CourseSettingsDrawer from '@features/map/components/CourseSettingsDrawer';
 import BottomInfoCards from '@features/map/components/BottomInfoCards';
+import { Button } from '@components/components/ui/button';
+import { useT } from 'src/locale';
 
 interface Props {
   courseId: string;
@@ -37,11 +41,36 @@ interface Props {
 }
 
 export default function RaceMap({ courseId, isAdmin = false }: Props) {
+  const t = useT();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const mapRef = useLeafletMap('map-root');
   
   // 使用动态视口高度
   const viewportHeight = useViewportHeight();
+
+  // 分享功能
+  const handleShare = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success(t('share.success'));
+    } catch (error) {
+      toast.error('复制失败，请手动复制链接');
+    }
+  };
+
+  const centerContent = (
+    <Button
+      variant="ghost"
+      onClick={handleShare}
+      aria-label="分享比赛链接"
+      className="text-foreground hover:bg-accent px-3 py-2 h-auto"
+    >
+      <div className="flex items-center gap-2">
+        <span className="font-bold text-lg">{courseId}</span>
+        <GoShareAndroid style={{ width: 20, height: 20 }} />
+      </div>
+    </Button>
+  );
 
   // ---- Course params ----
   const {
@@ -221,7 +250,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     >
       <div id="map-root" className="w-full h-full" />
       <TopBar 
-        center={courseId} 
+        center={centerContent} 
         right={<OnlineCount count={onlineCount} />} 
       />
       <ObserversLayer observers={observers} map={mapRef.current} />

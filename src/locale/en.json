@@ -14,6 +14,7 @@
   "common.select_course_type": "Select course type",
   "common.direction": "Direction",
   "common.distance": "Distance",
+  "share.success": "Share link copied to clipboard!",
   "home.title": "Sailing Judge Tool",
   "home.input_placeholder": "Enter room code",
   "home.join_race": "Join race",
