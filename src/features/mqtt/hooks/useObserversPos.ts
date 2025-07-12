@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMqttClient } from '@features/mqtt/hooks';
+import { useMqttClient } from '../hooks';
 
 export interface ObserverPos {
   id: string;
@@ -9,62 +9,80 @@ export interface ObserverPos {
   ts: number;
 }
 
+interface Options {
+  raceId: string;
+  observerId?: string; // 如果提供observerId，会过滤掉自己的消息
+}
+
 /**
- * 订阅 race/{id}/location/#，维护最近 60s 内活跃的观察者位置列表。
+ * 订阅所有观察者位置消息
+ * 如果提供observerId，会过滤掉自己的消息
+ * 维护最近60s内活跃的观察者位置列表
  */
-export function useObserversPos(raceId: string) {
+export function useObserversPos({ raceId, observerId }: Options) {
   const client = useMqttClient();
   const [observers, setObservers] = useState<Record<string, ObserverPos>>({});
   const observersRef = useRef(observers);
-  observersRef.current = observers;
 
   useEffect(() => {
     if (!client) return;
+
     const topicFilter = `race/${raceId}/location/#`;
 
-    const onMsg = (t: string, payload: Uint8Array, packet: any) => {
-      if (!t.startsWith(`race/${raceId}/location/observer/`)) return; // 排除 admin
-      const id = t.split('/').at(-1)!;
+    const onMsg = (topic: string, payload: Uint8Array) => {
+      if (!topic.startsWith(`race/${raceId}/location/observer/`)) {
+        return; // 排除 admin 和其他非观察者消息
+      }
+
+      const id = topic.split('/').at(-1)!;
+
+      // 如果是自己的消息，跳过
+      if (observerId && id === observerId) {
+        return;
+      }
+
       try {
         const data = JSON.parse(new TextDecoder().decode(payload));
-        if (typeof data.lat !== 'number' || typeof data.lng !== 'number') return;
-        setObservers(prev => ({
-          ...prev,
-          [id]: {
-            id,
-            lat: data.lat,
-            lng: data.lng,
-            heading: data.heading ?? null,
-            ts: data.ts ?? Date.now(),
-          },
-        }));
-      } catch {
-        /* ignore */
+        if (typeof data.lat !== 'number' || typeof data.lng !== 'number') {
+          return;
+        }
+
+        const now = Date.now();
+        const newObserver: ObserverPos = {
+          id,
+          lat: data.lat,
+          lng: data.lng,
+          heading: data.heading ?? null,
+          ts: data.ts ?? now,
+        };
+
+        setObservers(prev => {
+          // 清理超过60s的观察者
+          const cleaned: Record<string, ObserverPos> = {};
+          Object.values(prev).forEach(o => {
+            if (now - o.ts < 60_000) {
+              cleaned[o.id] = o;
+            }
+          });
+
+          // 添加/更新当前观察者
+          cleaned[id] = newObserver;
+
+          return cleaned;
+        });
+      } catch (e) {
+        // 忽略解析错误
       }
     };
 
-    client.subscribe(topicFilter, { qos: 0 });
+    client.subscribe(topicFilter);
     client.on('message', onMsg);
+
     return () => {
       client.unsubscribe(topicFilter);
       client.off('message', onMsg);
     };
-  }, [client, raceId]);
-
-  // 每秒清理离线
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      setObservers(prev => {
-        const next: Record<string, ObserverPos> = {};
-        Object.values(prev).forEach(o => {
-          if (now - o.ts < 60_000) next[o.id] = o;
-        });
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  }, [client, raceId, observerId]);
 
   return Object.values(observersRef.current);
 } 

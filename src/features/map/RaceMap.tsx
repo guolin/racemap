@@ -26,7 +26,7 @@ import CompassButton from '@features/map/components/CompassButton';
 import { InfoCard } from '@shared/ui/InfoCard';
 import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
 import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublish';
-import { useObserversPos } from '@features/mqtt/hooks/useObserversPos';
+import { useObserversPos, ObserverPos } from '@features/mqtt/hooks/useObserversPos';
 import { ObserversLayer } from '@features/map/components/ObserversLayer';
 import CourseSettingsDrawer from '@features/map/components/CourseSettingsDrawer';
 import BottomInfoCards from '@features/map/components/BottomInfoCards';
@@ -194,9 +194,15 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   }
 
   // Subscribe to all observers
-  const observersAll = useObserversPos(courseId);
+  const observersAll = useObserversPos({ 
+    raceId: courseId, 
+    observerId: observerIdRef.current 
+  });
   const observers = observersAll.filter(o => o.id !== observerIdRef.current);
-
+  
+  // 计算在线人数：observersAll已经包含所有观察者（包括自己）
+  const onlineCount = observersAll.length;
+  
   // 当管理员修改航线参数时，立即广播更新
   useEffect(() => {
     if (isAdmin && publishNow) publishNow();
@@ -216,7 +222,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       <div id="map-root" className="w-full h-full" />
       <TopBar 
         center={courseId} 
-        right={<OnlineCount count={observers.length} />} 
+        right={<OnlineCount count={onlineCount} />} 
       />
       <ObserversLayer observers={observers} map={mapRef.current} />
       {!isAdmin && (
