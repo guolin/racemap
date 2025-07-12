@@ -4,5 +4,8 @@
      environment = { NODE_VERSION = "18" }  # 根据你本地 Node 版本填
      base      = "."               # 代码位于仓库根目录
 
+   [build.environment]
+     NODE_ENV = "production"
+
    [[plugins]]
      package = "@netlify/plugin-nextjs"
