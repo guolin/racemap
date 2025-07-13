@@ -1,111 +1,51 @@
-# Loading 系统说明
+# Loading System
 
 ## 概述
 
-为了提升用户体验，我们为应用添加了loading页面系统。系统包含两个主要的loading组件：
+本项目的loading系统采用两种组件：
 
-1. **SimpleLoading** - 简单快速的loading，适用于轻量级页面
-2. **LoadingScreen** - 功能丰富的loading，适用于复杂页面
+1. **SimpleLoading** - 简单loading，适用于所有页面
+2. ~~LoadingScreen~~ - ~~功能丰富的loading，适用于复杂页面~~ (已移除)
 
-## 组件说明
+## 使用方式
 
 ### SimpleLoading
 
-适用于首页等简单页面的快速loading。
+适用于所有页面的简单loading组件。
 
-**特点：**
-- 显示时间短（默认800ms）
-- 简洁的动画效果
-- 轻量级，加载速度快
-
-**使用示例：**
 ```tsx
 import SimpleLoading from '../components/SimpleLoading';
 
-export default function HomePage() {
+export default function MyPage() {
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
-      {isLoading && <SimpleLoading onLoadingComplete={() => setIsLoading(false)} />}
-      <main>页面内容</main>
+      {isLoading && <SimpleLoading />}
+      <MyContent />
     </>
   );
 }
 ```
-
-### LoadingScreen
-
-适用于race页面等复杂页面的loading。
-
-**特点：**
-- 显示详细的加载步骤
-- 支持依赖项等待
-- 可配置最小显示时间
-- 进度条和百分比显示
-
-**使用示例：**
-```tsx
-import LoadingScreen from '../components/LoadingScreen';
-
-export default function RacePage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [mapLoaded, setMapLoaded] = useState(false);
-
-  return (
-    <>
-      {isLoading && (
-        <LoadingScreen 
-          onLoadingComplete={() => setIsLoading(false)}
-          minDisplayTime={2000}
-          dependencies={[
-            new Promise(resolve => {
-              if (mapLoaded) resolve(true);
-              else {
-                const checkLoaded = () => {
-                  if (mapLoaded) resolve(true);
-                  else setTimeout(checkLoaded, 100);
-                };
-                checkLoaded();
-              }
-            })
-          ]}
-        />
-      )}
-      <RaceMap />
-    </>
-  );
-}
-```
-
-## 配置选项
 
 ### SimpleLoading Props
 
-- `onLoadingComplete?: () => void` - 加载完成回调
-- `duration?: number` - 显示时长（默认800ms）
-
-### LoadingScreen Props
-
-- `onLoadingComplete?: () => void` - 加载完成回调
-- `minDisplayTime?: number` - 最小显示时间（默认1500ms）
-- `dependencies?: Promise<any>[]` - 需要等待的依赖项
+- `duration?: number` - loading持续时间（毫秒），默认800ms
+- `onLoadingComplete?: () => void` - loading完成时的回调函数
 
 ## 最佳实践
 
-1. **首页使用SimpleLoading** - 首页内容简单，使用快速loading
-2. **复杂页面使用LoadingScreen** - 地图等复杂组件使用详细loading
-3. **合理设置显示时间** - 避免loading时间过短或过长
-4. **等待真实依赖** - 对于地图等组件，等待实际加载完成
+1. **所有页面使用SimpleLoading** - 统一的简单loading体验
+2. **固定显示时间** - 使用简单的定时器，避免复杂的依赖项处理
+3. **避免复杂逻辑** - 不依赖地图加载状态等复杂条件
 
-## 自定义
+## 文件结构
 
-如需自定义loading样式，可以修改以下文件：
-- `components/SimpleLoading.tsx` - 简单loading样式
-- `components/LoadingScreen.tsx` - 详细loading样式
-
-## 性能考虑
-
-- Loading组件使用CSS动画，性能良好
-- 避免在loading期间进行大量计算
-- 合理使用依赖项等待，避免无限等待 
+- `components/SimpleLoading.tsx` - 简单loading样式 
