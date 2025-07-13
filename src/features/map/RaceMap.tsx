@@ -235,7 +235,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // 当管理员修改航线参数时，立即广播更新
   useEffect(() => {
     if (isAdmin && publishNow) publishNow();
-  }, [isAdmin, type, params, publishNow]);
+  }, [isAdmin, type, params]);
 
   // ---- UI ----
   const handleDrawerSave = () => {
