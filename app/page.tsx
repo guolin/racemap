@@ -92,7 +92,11 @@ export default function Home() {
               EN
             </span>
           </div>
-          <span className="text-gray-800 text-sm font-medium cursor-pointer" style={{letterSpacing: 1}}>
+          <span 
+            className="text-gray-800 text-sm font-medium cursor-pointer" 
+            style={{letterSpacing: 1}}
+            onClick={() => router.push('/manual')}
+          >
             {lang === 'zh' ? '使用说明' : 'manual'}
           </span>
         </div>

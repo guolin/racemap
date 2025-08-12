@@ -7,7 +7,7 @@ if (typeof window !== 'undefined') {
   require('leaflet-rotatedmarker');
 }
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import L from 'leaflet';
 import { toast } from 'sonner';
 import { GoShareAndroid } from 'react-icons/go';
@@ -34,6 +34,10 @@ import CourseSettingsDrawer from '@features/map/components/CourseSettingsDrawer'
 import BottomInfoCards from '@features/map/components/BottomInfoCards';
 import { Button } from '@components/components/ui/button';
 import { useT } from 'src/locale';
+import { useMqttClient } from '@features/mqtt/hooks';
+import { useNetworkStatus } from '@features/network/hooks/useNetworkStatus';
+import { NetworkIndicator } from './components/NetworkIndicator';
+import { ObserversList } from './components/ObserversList';
 
 interface Props {
   courseId: string;
@@ -99,6 +103,15 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const setType = useCourseStore((s)=>s.setType);
   const setParams = useCourseStore((s)=>s.setParams);
 
+  // 稳定序列化 params，避免引用变化误触发
+  const paramsHash = useMemo(() => {
+    const obj = params ?? {};
+    const keys = Object.keys(obj).sort();
+    const stable: Record<string, any> = {};
+    for (const k of keys) stable[k] = (obj as any)[k];
+    return JSON.stringify(stable);
+  }, [params]);
+
   const publishNow = useMqttPosSync({
     courseId,
     isAdmin,
@@ -118,6 +131,8 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
 
   // ---- Map bearing ----
   const [mapBearing, setMapBearing] = useState(0);
+  // 是否锁定到航线轴（指南针按钮控制）
+  const lockedToAxisRef = useRef(false);
   useEffect(() => {
     if (mapRef.current && (mapRef.current as any).setBearing) {
       (mapRef.current as any).setBearing(mapBearing, { animate: true });
@@ -174,6 +189,15 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     }
   }, [gps.latLng, origin, isAdmin]);
 
+  // 当航线角度变化且处于“锁定到航线轴”时，立即更新地图朝向
+  useEffect(() => {
+    if (lockedToAxisRef.current) {
+      const axisNum = courseAxis || 0;
+      setMapBearing(-axisNum);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseAxisNum]);
+
   // tooltip state for observer panel
   const [gpsTipVisible, setGpsTipVisible] = useState(false);
   const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
@@ -188,8 +212,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const closeSettings = () => {
     setSettingsVisible(false);
-    // redraw based on latest params if origin exists
-    if (origin) redraw(origin);
+    // 不需要手动重绘，useCourseDraw会自动处理参数变化
     if (publishNow) publishNow();
   };
 
@@ -200,9 +223,10 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   useEffect(() => {
     if (isAdmin && gps.latLng) {
       setOrigin(gps.latLng);
-      redraw(gps.latLng);
+      redraw(gps.latLng); // 这会设置lastOriginRef，确保后续参数变化能自动重绘
     }
   }, [isAdmin, gps.latLng, redraw]);
+
 
   // ---- Observer position sync ----
   const observerIdRef = useRef<string>('');
@@ -235,13 +259,17 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // 当管理员修改航线参数时，立即广播更新
   useEffect(() => {
     if (isAdmin && publishNow) publishNow();
-  }, [isAdmin, type, params]);
+  }, [isAdmin, type, paramsHash]);
 
   // ---- UI ----
   const handleDrawerSave = () => {
-    if (origin) redraw(origin);
+    // 不需要手动重绘，useCourseDraw会自动处理参数变化
     if (publishNow) publishNow();
   };
+
+  // 网络状态
+  const mqttClient = useMqttClient();
+  const networkStatus = useNetworkStatus(mqttClient);
 
   return (
     <div 
@@ -254,6 +282,15 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
         right={<OnlineCount count={onlineCount} />} 
       />
       <ObserversLayer observers={observers} map={mapRef.current} />
+      {/* Bottom-left compact network indicator */}
+      <div className="absolute left-2 bottom-2 z-[1100] pointer-events-none">
+        <div className="pointer-events-auto">
+          <NetworkIndicator status={networkStatus} compact />
+        </div>
+      </div>
+      {!isAdmin && (
+        <ObserversList observers={observersAll} currentObserverId={observerIdRef.current} />
+      )}
       {!isAdmin && (
         <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>
           <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} onClick={() => setGpsTipVisible(v=>!v)} />
@@ -296,7 +333,17 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
         courseParams={params}
       />
       <ErrorBanner message={gps.errorMsg} />
-      <CompassButton bearing={mapBearing} onToggle={() => { const axisNum = courseAxis||0; setMapBearing(prev=>Math.abs(prev)<1e-2?-axisNum:0); }} />
+      <CompassButton
+        bearing={mapBearing}
+        onToggle={() => {
+          const axisNum = courseAxis || 0;
+          setMapBearing(prev => {
+            const turningOn = Math.abs(prev) < 1e-2; // 从自由模式 -> 锁定模式
+            lockedToAxisRef.current = turningOn;
+            return turningOn ? -axisNum : 0;
+          });
+        }}
+      />
       <BottomInfoCards courseAxis={courseAxisNum} courseSizeNm={courseSizeNm} />
     </div>
   );

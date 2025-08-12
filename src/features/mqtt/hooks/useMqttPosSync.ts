@@ -37,35 +37,38 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData,
   onRecvPosRef.current = onRecvPos;
   onRecvCourseRef.current = onRecvCourse;
 
-  // 检查位置是否发生显著变化（1米阈值）
+  // 检查位置是否发生显著变化（0.5米阈值）
   const checkPositionChange = () => {
     const currentPos = getLatestPosRef.current();
     if (!currentPos) return false;
-    
     const lastPos = lastPosRef.current;
     if (!lastPos) {
       lastPosRef.current = currentPos;
       return true; // 首次位置，需要发布
     }
-    
-    // 检查位置变化（精度约1米）
-    const POSITION_THRESHOLD = 0.00001; // 约1米
-    const hasPositionChanged = 
+    // 约0.5米
+    const POSITION_THRESHOLD = 0.000005;
+    const hasPositionChanged =
       Math.abs(currentPos.lat - lastPos.lat) > POSITION_THRESHOLD ||
       Math.abs(currentPos.lng - lastPos.lng) > POSITION_THRESHOLD;
-    
     if (hasPositionChanged) {
       lastPosRef.current = currentPos;
       return true;
     }
-    
     return false;
   };
 
-  // 发布函数
+  // 发布函数，增加最小发布间隔，避免抖动
+  const lastPublishTimeRef = useRef<number>(0);
+  const MIN_PUBLISH_INTERVAL = 2000; // ms
   const tryPublish = () => {
     if (!client.connected) {
       console.debug('[MQTT] Skip publishing, client not connected');
+      return;
+    }
+    const now = Date.now();
+    if (now - lastPublishTimeRef.current < MIN_PUBLISH_INTERVAL) {
+      console.debug('[MQTT] Skip publishing, within minimum interval');
       return;
     }
     const pos = getLatestPosRef.current();
@@ -80,22 +83,20 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData,
       lng: pos.lng,
       course: { type, params },
     };
-    
+
     // 去重逻辑：同时检查位置和航线参数
     const dedupKey = JSON.stringify({
       lat: pos.lat,
       lng: pos.lng,
-      course: { type, params }
+      course: { type, params },
     });
-
-    // 去重：如果位置和航线参数均未变化，则不再发送
     if (dedupKey === lastPayloadRef.current) {
       console.debug('[MQTT] Skip publishing, no changes');
       return;
     }
 
     try {
-      const payloadStr = JSON.stringify({ ...common, timestamp: Date.now() });
+      const payloadStr = JSON.stringify({ ...common, timestamp: now });
       client.publish(posTopic(courseId), payloadStr, { retain: true, qos: 1 }, (err) => {
         if (err) {
           console.error('[MQTT] Failed to publish:', err);
@@ -103,6 +104,7 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData,
         }
         console.debug('[MQTT] Published position update');
         lastPayloadRef.current = dedupKey;
+        lastPublishTimeRef.current = now;
       });
     } catch (e) {
       console.error('[MQTT] Error preparing payload:', e);
@@ -171,20 +173,21 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData,
     const pos = getLatestPosRef.current();
     if (!pos) return;
     const { type, params } = getCourseDataRef.current();
+    const now = Date.now();
     const payloadStr = JSON.stringify({
       id: 'ADMIN',
       lat: pos.lat,
       lng: pos.lng,
-      timestamp: Date.now(),
+      timestamp: now,
       course: { type, params },
     });
     client.publish(posTopic(courseId), payloadStr, { retain: true, qos: 1 });
-    // 更新去重键，保持与tryPublish一致
     lastPayloadRef.current = JSON.stringify({
       lat: pos.lat,
       lng: pos.lng,
-      course: { type, params }
+      course: { type, params },
     });
+    lastPublishTimeRef.current = now;
   };
 
   return publishNow;

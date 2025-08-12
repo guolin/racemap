@@ -69,7 +69,7 @@ export const GpsProvider: React.FC<{ children: React.ReactNode; throttleMs?: num
       setError({ code: 0, message: 'Geolocation unsupported', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 } as any);
       return;
     }
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, { enableHighAccuracy: true, maximumAge: 0, timeout: 2000 });
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
   };
 
   // manage watch
@@ -86,7 +86,7 @@ export const GpsProvider: React.FC<{ children: React.ReactNode; throttleMs?: num
     watchIdRef.current = watchPositionThrottled(handleSuccess, handleError, {
       enableHighAccuracy: true,
       maximumAge: 0,
-      timeout: 2000,
+      timeout: 5000,
       throttleTime: throttleMs,
     });
 
