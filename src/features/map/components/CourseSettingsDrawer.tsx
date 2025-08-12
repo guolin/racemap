@@ -228,6 +228,29 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
         }} />
       ) : (
         Object.entries(plugin.paramSchema).map(([k, cfg]: any) => {
+          // 处理 select 类型
+          if (cfg.type === 'select') {
+            return (
+              <div key={k} className="flex items-center gap-3" style={{ fontSize: 14 }}>
+                <span className="flex-1 min-w-[6rem]">{plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k}</span>
+                <Select
+                  value={draft[k] ?? cfg.options?.[0] ?? ''}
+                  onValueChange={(val) => setDraft({ ...draft, [k]: val })}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[9999]">
+                    {cfg.options?.map((opt: string) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          }
+          
+          // 处理数字类型（原有逻辑）
           const step = cfg.step ?? 1;
           return (
             <div key={k} className="flex items-center gap-3" style={{ fontSize: 14 }}>
