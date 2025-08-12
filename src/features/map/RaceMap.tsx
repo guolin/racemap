@@ -7,7 +7,7 @@ if (typeof window !== 'undefined') {
   require('leaflet-rotatedmarker');
 }
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import L from 'leaflet';
 import { toast } from 'sonner';
 import { GoShareAndroid } from 'react-icons/go';
@@ -15,7 +15,7 @@ import { useLeafletMap } from '@features/map/hooks/useLeaflet';
 import { useDeviceOrientation } from '@features/map/hooks/useDeviceOrientation';
 import { useGpsWatch } from '@features/map/hooks/useGpsWatch';
 import { useMqttPosSync } from '@features/mqtt/hooks/useMqttPosSync';
-import { useCourseDraw } from '@features/map/hooks/useCourseDraw';
+import { useMapRenderer } from '@features/map/hooks/useMapRenderer';
 import { useCourseStore } from '@features/course/store';
 import { useViewportHeight } from '@features/map/hooks/useViewportHeight';
 import TopBar from './components/TopBar';
@@ -25,7 +25,6 @@ import SettingsSheet from '@features/map/components/SettingsSheet';
 import ErrorBanner from '@features/map/components/ErrorBanner';
 import { GpsPanel } from '@features/map/components/GpsPanel';
 import CompassButton from '@features/map/components/CompassButton';
-import { InfoCard } from '@shared/ui/InfoCard';
 import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
 import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublish';
 import { useObserversPos, ObserverPos } from '@features/mqtt/hooks/useObserversPos';
@@ -76,15 +75,10 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     </Button>
   );
 
-  // ---- Course params ----
-  const {
-    axis: courseAxisNum,
-    distanceNm: courseSizeNm,
-    startLineM: startLineLenMNum,
-    setAxis,
-    setDistanceNm,
-    setStartLineM,
-  } = useCourseStore();
+  // ---- Course params ---- 优化订阅，只取需要的字段
+  const courseAxisNum = useCourseStore(s => s.axis);
+  const courseSizeNm = useCourseStore(s => s.distanceNm);
+  // setters只在需要时获取，避免不必要的重渲染
   // 仅用于 compass toggle: 直接取 store 值
   const courseAxis = courseAxisNum;
 
@@ -93,7 +87,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const gps = useGpsWatch({});
   // signal船（origin）坐标（从 MQTT 获取）
   const [origin, setOrigin] = useState<L.LatLng | null>(null);
-  const { redraw } = useCourseDraw(mapRef);
+  const { drawCourse, renderState } = useMapRenderer(mapRef);
 
   // mqtt sync
   const lastPosRef = useRef<L.LatLng | null>(null);
@@ -103,14 +97,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const setType = useCourseStore((s)=>s.setType);
   const setParams = useCourseStore((s)=>s.setParams);
 
-  // 稳定序列化 params，避免引用变化误触发
-  const paramsHash = useMemo(() => {
-    const obj = params ?? {};
-    const keys = Object.keys(obj).sort();
-    const stable: Record<string, any> = {};
-    for (const k of keys) stable[k] = (obj as any)[k];
-    return JSON.stringify(stable);
-  }, [params]);
+  // paramsHash现在由useMapRenderer内部处理，这里保留用于MQTT
 
   const publishNow = useMqttPosSync({
     courseId,
@@ -119,8 +106,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     getCourseData: () => ({ type, params }),
     onRecvPos: (p) => {
       if (!isAdmin) {
-        setOrigin(p);
-        redraw(p);
+        setOrigin(p); // 只更新状态，统一渲染逻辑会自动处理重绘
       }
     },
     onRecvCourse: (c) => {
@@ -212,20 +198,37 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const closeSettings = () => {
     setSettingsVisible(false);
-    // 不需要手动重绘，useCourseDraw会自动处理参数变化
+    // 不需要手动重绘，useMapRenderer负责统一重绘
     if (publishNow) publishNow();
   };
 
   // ---- Coordinates Info ----
   const [coordinatesDialogVisible, setCoordinatesDialogVisible] = useState(false);
   
-  // admin: 当 gps 更新时，更新 origin 并重绘航线
+  // 统一的地图渲染逻辑 - 唯一负责重绘的地方
   useEffect(() => {
+    let renderOrigin: L.LatLng | null = null;
+    
     if (isAdmin && gps.latLng) {
+      // 管理员：使用自己的GPS位置作为origin
+      renderOrigin = gps.latLng;
       setOrigin(gps.latLng);
-      redraw(gps.latLng); // 这会设置lastOriginRef，确保后续参数变化能自动重绘
+    } else if (!isAdmin && origin) {
+      // 观察者：使用接收到的admin位置作为origin
+      renderOrigin = origin;
     }
-  }, [isAdmin, gps.latLng, redraw]);
+    
+    // 统一重绘：只有这里负责调用绘制
+    if (renderOrigin) {
+      drawCourse(renderOrigin);
+    }
+  }, [
+    isAdmin, 
+    gps.latLng, 
+    origin, 
+    renderState.paramsHash, // 使用稳定的hash检测参数变化
+    drawCourse
+  ]);
 
 
   // ---- Observer position sync ----
@@ -237,14 +240,19 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     if (!saved && typeof window !== 'undefined') localStorage.setItem(key, observerIdRef.current);
   }
 
-  // Publish my position if NOT admin
-  if (!isAdmin) {
-    useObserverPosPublish({
-      raceId: courseId,
-      observerId: observerIdRef.current,
-      getLatestPos: () => (gps.latLng ? { lat: gps.latLng.lat, lng: gps.latLng.lng, heading: gps.headingDeg } : null),
-    });
-  }
+  // 稳定的位置获取函数，避免每次渲染都重新创建
+  const getLatestPos = useCallback(
+    () => (gps.latLng ? { lat: gps.latLng.lat, lng: gps.latLng.lng, heading: gps.headingDeg } : null),
+    [gps.latLng?.lat, gps.latLng?.lng, gps.headingDeg]
+  );
+
+  // Observer位置发布 - Hook必须无条件调用，在内部处理isAdmin逻辑
+  useObserverPosPublish({
+    raceId: courseId,
+    observerId: observerIdRef.current,
+    enabled: !isAdmin, // 通过enabled参数控制是否启用
+    getLatestPos,
+  });
 
   // Subscribe to all observers
   const observersAll = useObserversPos({ 
@@ -259,11 +267,11 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // 当管理员修改航线参数时，立即广播更新
   useEffect(() => {
     if (isAdmin && publishNow) publishNow();
-  }, [isAdmin, type, paramsHash]);
+  }, [isAdmin, type, renderState.paramsHash]); // 使用渲染器的稳定hash
 
   // ---- UI ----
   const handleDrawerSave = () => {
-    // 不需要手动重绘，useCourseDraw会自动处理参数变化
+    // 不需要手动重绘，useMapRenderer负责统一重绘
     if (publishNow) publishNow();
   };
 

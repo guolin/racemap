@@ -10,6 +10,7 @@ interface ObserverPosition {
 interface Options {
   raceId: string;
   observerId: string;
+  enabled?: boolean; // 是否启用位置发布，默认true
   getLatestPos: () => ObserverPosition | null;
 }
 
@@ -17,7 +18,7 @@ interface Options {
  * 发布观察者位置到MQTT
  * 添加位置去重逻辑，如果位置没有变化就不发送
  */
-export function useObserverPosPublish({ raceId, observerId, getLatestPos }: Options) {
+export function useObserverPosPublish({ raceId, observerId, enabled = true, getLatestPos }: Options) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSentPosRef = useRef<ObserverPosition | null>(null);
 
@@ -38,6 +39,11 @@ export function useObserverPosPublish({ raceId, observerId, getLatestPos }: Opti
   };
 
   useEffect(() => {
+    // 如果未启用，直接返回
+    if (!enabled) {
+      return;
+    }
+
     // 发布函数
     const tick = () => {
       const pos = getLatestPos();
@@ -60,7 +66,7 @@ export function useObserverPosPublish({ raceId, observerId, getLatestPos }: Opti
         clearInterval(timerRef.current);
       }
     };
-  }, [raceId, observerId, getLatestPos]);
+  }, [raceId, observerId, enabled, getLatestPos]);
 
   // 页面关闭时发送空消息清理retained消息
   useEffect(() => {
