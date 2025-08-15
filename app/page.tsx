@@ -2,6 +2,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useT, useLang, useSetLang } from 'src/locale';
 import { getMyRaceId } from '../utils/race';
 import { Button } from '@components/components/ui/button';
@@ -37,7 +38,14 @@ export default function Home() {
       <main className="min-h-screen bg-background text-foreground px-4 pt-6">
         {/* 顶部logo插画 */}
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="logo" style={{ width: 320, height: 320, maxWidth: '100%' }} />
+          <Image 
+            src="/logo.png" 
+            alt="logo" 
+            width={320} 
+            height={320} 
+            style={{ maxWidth: '100%' }}
+            priority
+          />
         </div>
 
         {/* 按钮区 */}

@@ -362,6 +362,7 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
         mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -374,6 +375,7 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
     if (groupRef.current.getBounds && groupRef.current.getBounds().isValid()) {
       mapRef.current.fitBounds(groupRef.current.getBounds(), { padding: [10, 10] });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]); // 只在航线类型变化时触发
 
   // 重绘：所有参数变化都重绘航线
@@ -392,6 +394,7 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
 
     const newGroup = plugin.draw(mapRef.current, origin, params, null);
     groupRef.current = newGroup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, params]); // 航线类型和参数变化都重绘
 
   return (

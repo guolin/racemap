@@ -38,6 +38,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
       obj[k] = v != null ? String(v) : '';
     });
     setDraft(obj);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, isVisible]);
 
   if (!isVisible) return null;

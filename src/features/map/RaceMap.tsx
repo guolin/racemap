@@ -118,6 +118,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     if (mapRef.current && (mapRef.current as any).setBearing) {
       (mapRef.current as any).setBearing(mapBearing, { animate: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBearing]);
 
   // ---- Observer marker ----
@@ -147,6 +148,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       myMarkerRef.current.setLatLng(gps.latLng);
       (myMarkerRef.current as any).setRotationAngle(lastDirRef.current + mapBearing); // 这里也改为加号
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gps.latLng, gps.headingDeg, mapBearing, isAdmin]);
 
   // ---- auto center ----
@@ -168,6 +170,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       map.setView(origin, 15);
       centeredRef.current = true;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gps.latLng, origin, isAdmin]);
 
   // 当航线角度变化且处于“锁定到航线轴”时，立即更新地图朝向
@@ -238,7 +241,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // 稳定的位置获取函数，避免每次渲染都重新创建
   const getLatestPos = useCallback(
     () => (gps.latLng ? { lat: gps.latLng.lat, lng: gps.latLng.lng, heading: gps.headingDeg } : null),
-    [gps.latLng?.lat, gps.latLng?.lng, gps.headingDeg]
+    [gps.latLng, gps.headingDeg]
   );
 
   // Observer位置发布 - Hook必须无条件调用，在内部处理isAdmin逻辑
@@ -269,6 +272,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   // 当管理员修改航线参数时，立即广播更新
   useEffect(() => {
     if (isAdmin && publishNow) publishNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, type, renderState.paramsHash]); // 使用渲染器的稳定hash
 
   // ---- UI ----

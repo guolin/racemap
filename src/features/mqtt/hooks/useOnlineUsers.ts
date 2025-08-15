@@ -111,6 +111,7 @@ export function useOnlineUsers(raceId: string, currentUserId: string) {
       client.unsubscribe(oldObserverTopicFilter);
       client.off('message', onMsg);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, raceId]);
 
   const allUsers = Object.values(users);

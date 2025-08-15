@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface SimpleLoadingProps {
   onLoadingComplete?: () => void;
@@ -27,10 +28,13 @@ export default function SimpleLoading({
     <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
       {/* Logo */}
       <div className="mb-6">
-        <img 
+        <Image 
           src="/logo.png" 
           alt="logo" 
-          className="w-24 h-24 animate-pulse"
+          width={96}
+          height={96}
+          className="animate-pulse"
+          priority
         />
       </div>
 

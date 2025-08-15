@@ -183,6 +183,7 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData,
         publishTimerRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, isAdmin, client]);
 
   // exposed manual publish function (admin only)

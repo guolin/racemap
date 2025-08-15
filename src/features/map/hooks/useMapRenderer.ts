@@ -43,16 +43,20 @@ export function useMapRenderer(mapRef: React.RefObject<L.Map | null>) {
       renderState.courseParams, 
       null
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapRef, renderState.courseType, renderState.paramsHash]); // 只依赖类型和参数hash，避免频繁重建
 
   // 清理函数
   useEffect(() => {
+    const currentMapRef = mapRef.current;
+    const currentGroupRef = groupRef.current;
     return () => {
-      if (mapRef.current && groupRef.current) {
-        mapRef.current.removeLayer(groupRef.current);
+      if (currentMapRef && currentGroupRef) {
+        currentMapRef.removeLayer(currentGroupRef);
         groupRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapRef]);
 
   return { 
