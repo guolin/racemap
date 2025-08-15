@@ -33,7 +33,7 @@ export default function TimerPage() {
   const [warning, setWarning] = useState('');
   const [firstFinish, setFirstFinish] = useState('');
   const [lastFinish, setLastFinish] = useState('');
-  const [now, setNow] = useState<Date>(new Date());
+  const [, setNow] = useState<Date>(new Date());
 
   const warningSec = useMemo(() => parseTimeString(warning), [warning]);
   const firstFinishSec = useMemo(() => parseTimeString(firstFinish), [firstFinish]);
@@ -66,7 +66,6 @@ export default function TimerPage() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const nowStr = formatTime(now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds());
 
   return (
     <>

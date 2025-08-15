@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import L from 'leaflet';
 import { registry } from '@features/course/plugins/registry';
 import { useCourseStore } from '@features/course/store';

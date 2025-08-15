@@ -10,7 +10,7 @@ export default function TestOnlinePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   
   const client = useMqttClient();
-  const { allUsers, onlineCount, otherUsers, admin, observers } = useOnlineUsers(raceId, userId);
+  const { allUsers, onlineCount, admin, observers } = useOnlineUsers(raceId, userId);
 
   const [logs, setLogs] = useState<string[]>([]);
 

@@ -15,7 +15,7 @@ interface Options {
   /** 自定义 throttle 时间 (ms)，默认 1000 */
   throttleTime?: number;
   /** 回调：每次收到定位 */
-  onUpdate?: (s: GpsState) => void;
+  onUpdate?: (_s: GpsState) => void;
 }
 
 /**

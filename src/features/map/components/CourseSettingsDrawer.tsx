@@ -153,7 +153,7 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
   );
 }
 
-function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>; setDraft: (d: Record<string, string>) => void }) {
+function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>; setDraft: (_d: Record<string, string>) => void }) {
   const t = useT();
   const lang = useLang();
   const type = useCourseStore((s) => s.type);
@@ -191,12 +191,7 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
     }
   };
 
-  const commitField = (k: string) => {
-    const raw = draft[k];
-    if (raw === '') return;
-    const num = Number(raw);
-    if (!Number.isNaN(num)) setDraft({ ...draft, [k]: String(num) });
-  };
+
 
   return (
     <div className="flex flex-col gap-6">

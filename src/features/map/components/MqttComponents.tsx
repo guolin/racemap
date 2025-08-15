@@ -5,7 +5,7 @@ interface MqttComponentsProps {
   // 添加需要的props
 }
 
-export default function MqttComponents(props: MqttComponentsProps) {
+export default function MqttComponents(_props: MqttComponentsProps) {
   useEffect(() => {
     // MQTT相关初始化逻辑
   }, []);

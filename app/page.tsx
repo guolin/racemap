@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useT, useLang, useSetLang } from 'src/locale';

@@ -1,7 +1,5 @@
 import L from 'leaflet';
 import type React from 'react';
-// 使用 any 作为占位，后续可替换为 zod::ZodTypeAny
-type ParamSchema = any;
 
 /**
  * Props passed to a custom SettingsPanel of a course plugin.
@@ -10,7 +8,7 @@ type ParamSchema = any;
  */
 export interface SettingsPanelProps<P extends Record<string, any>> {
   params: P;
-  setParams: (newParams: P) => void;
+  setParams: (_newParams: P) => void;
 }
 
 export interface CoursePluginI18n {
@@ -51,10 +49,10 @@ export interface CoursePlugin<T = any> {
    * @returns 绘制完成的 FeatureGroup（需已 addTo(map)）
    */
   draw: (
-    map: L.Map,
-    origin: L.LatLng,
-    params: T,
-    existing?: L.FeatureGroup | null
+    _map: L.Map,
+    _origin: L.LatLng,
+    _params: T,
+    _existing?: L.FeatureGroup | null
   ) => L.FeatureGroup;
   /**
    * 可选：自定义设置面板。
@@ -62,6 +60,6 @@ export interface CoursePlugin<T = any> {
    */
   SettingsPanel?: React.ComponentType<{
     params: T;
-    setParams: (updates: Partial<T>) => void;
+    setParams: (_updates: Partial<T>) => void;
   }>;
 } 

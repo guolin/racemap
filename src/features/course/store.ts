@@ -9,25 +9,25 @@ interface CourseState {
   params: Record<string, any>;
 
   // --- 新 API ---
-  setType: (t: CourseTypeId) => void;
+  setType: (_t: CourseTypeId) => void;
   /** 局部更新 params */
-  setParams: (patch: Record<string, any>) => void;
+  setParams: (_patch: Record<string, any>) => void;
 
   // --- 兼容旧字段（仅 simple 航线生效，后续可移除） ---
   axis: number;
   distanceNm: number;
   startLineM: number;
-  setAxis: (v: number) => void;
-  setDistanceNm: (v: number) => void;
-  setStartLineM: (v: number) => void;
-  setAll: (a: number, d: number, s: number) => void;
+  setAxis: (_v: number) => void;
+  setDistanceNm: (_v: number) => void;
+  setStartLineM: (_v: number) => void;
+  setAll: (_a: number, _d: number, _s: number) => void;
 }
 
 const defaultSimple = registry.simple.defaultParams;
 
 export const useCourseStore = create<CourseState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // ---- state ----
       type: 'simple',
       params: { ...defaultSimple },
@@ -38,12 +38,12 @@ export const useCourseStore = create<CourseState>()(
       startLineM: defaultSimple.startLineM,
 
       // ---- actions ----
-      setType: (t) => {
-        const plugin = registry[t];
+      setType: (_t) => {
+        const plugin = registry[_t];
         if (!plugin) return;
         const defaults = { ...plugin.defaultParams };
         set({
-          type: t,
+          type: _t,
           params: defaults,
           axis: (defaults as any).axis ?? 0,
           distanceNm: (defaults as any).distanceNm ?? 0,
@@ -51,13 +51,13 @@ export const useCourseStore = create<CourseState>()(
         });
       },
 
-      setParams: (patch) => {
+      setParams: (_patch) => {
         set((state) => {
           let changed = false;
           const newParams: Record<string, any> = { ...state.params };
-          for (const k in patch) {
-            if (patch[k] !== state.params[k]) {
-              newParams[k] = patch[k];
+          for (const k in _patch) {
+            if (_patch[k] !== state.params[k]) {
+              newParams[k] = _patch[k];
               changed = true;
             }
           }
@@ -65,36 +65,36 @@ export const useCourseStore = create<CourseState>()(
 
           return {
             params: newParams,
-            axis: patch.axis ?? state.axis,
-            distanceNm: patch.distanceNm ?? state.distanceNm,
-            startLineM: patch.startLineM ?? state.startLineM,
+            axis: _patch.axis ?? state.axis,
+            distanceNm: _patch.distanceNm ?? state.distanceNm,
+            startLineM: _patch.startLineM ?? state.startLineM,
           } as CourseState;
         });
       },
 
       // ---- legacy setters ----
-      setAxis: (v) => set((state) => ({
-        axis: v,
-        params: state.type === 'simple' ? { ...state.params, axis: v } : state.params,
+      setAxis: (_v) => set((state) => ({
+        axis: _v,
+        params: state.type === 'simple' ? { ...state.params, axis: _v } : state.params,
       })),
 
-      setDistanceNm: (v) => set((state) => ({
-        distanceNm: v,
-        params: state.type === 'simple' ? { ...state.params, distanceNm: v } : state.params,
+      setDistanceNm: (_v) => set((state) => ({
+        distanceNm: _v,
+        params: state.type === 'simple' ? { ...state.params, distanceNm: _v } : state.params,
       })),
 
-      setStartLineM: (v) => set((state) => ({
-        startLineM: v,
-        params: state.type === 'simple' ? { ...state.params, startLineM: v } : state.params,
+      setStartLineM: (_v) => set((state) => ({
+        startLineM: _v,
+        params: state.type === 'simple' ? { ...state.params, startLineM: _v } : state.params,
       })),
 
-      setAll: (a, d, s) => set((state) => ({
-        axis: a,
-        distanceNm: d,
-        startLineM: s,
+      setAll: (_a, _d, _s) => set((state) => ({
+        axis: _a,
+        distanceNm: _d,
+        startLineM: _s,
         params:
           state.type === 'simple'
-            ? { ...state.params, axis: a, distanceNm: d, startLineM: s }
+            ? { ...state.params, axis: _a, distanceNm: _d, startLineM: _s }
             : state.params,
       })),
     }),

@@ -1,3 +1,5 @@
+import React from 'react';
+import L from 'leaflet';
 import { useMapRenderer } from './useMapRenderer';
 
 /**

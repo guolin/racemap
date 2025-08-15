@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import TopBar from '../../src/features/map/components/TopBar';
 import { watchPositionThrottled, clearWatch as clearGeoWatch } from '../../utils/geoThrottle';
 
@@ -151,7 +151,7 @@ export default function GpsDebugPage() {
   }, []);
 
   // 单次获取当前位置
-  const fetchOnce = () => {
+  const fetchOnce = useCallback(() => {
     if (!navigator.geolocation) {
       const msg = '浏览器不支持 Geolocation';
       setErrorMsg(msg);
@@ -181,7 +181,7 @@ export default function GpsDebugPage() {
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
-  };
+  }, [deviceHeading]);
 
   // ---- 轮询定时器：若 1.2s 未收到 watch 回调则主动 getCurrentPosition ----
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function GpsDebugPage() {
         pollIntervalRef.current = null;
       }
     };
-  }, [tracking]);
+  }, [tracking, fetchOnce]);
 
   return (
     <>

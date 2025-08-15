@@ -1,6 +1,5 @@
 'use client';
 import { useEffect } from 'react';
-import L from 'leaflet';
 
 // 动态导入leaflet插件
 const loadLeafletPlugins = async () => {
@@ -11,10 +10,10 @@ const loadLeafletPlugins = async () => {
 };
 
 interface LeafletMapProps {
-  mapRef: any;
+  _mapRef: any;
 }
 
-export default function LeafletMap({ mapRef }: LeafletMapProps) {
+export default function LeafletMap({ _mapRef }: LeafletMapProps) {
   useEffect(() => {
     loadLeafletPlugins();
   }, []);

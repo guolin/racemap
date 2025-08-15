@@ -117,14 +117,7 @@ export const simple1aPlugin: CoursePlugin<Simple1aParams> = {
       dashArray: '4 4',
     });
 
-    // markers style
-    const markStyle: L.CircleMarkerOptions = {
-      radius: 6,
-      color: '#000',
-      weight: 1,
-      fillColor: '#fff',
-      fillOpacity: 1,
-    };
+
 
     const lang = getCurrentLang();
     const tooltips = simple1aPlugin.i18n![lang].tooltips;

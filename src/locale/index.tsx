@@ -15,8 +15,8 @@ const dictionaries: Record<Lang, Record<string, string>> = {
 
 interface LangContextValue {
   lang: Lang;
-  setLang: (l: Lang) => void;
-  t: (key: string) => string;
+  setLang: (_l: Lang) => void;
+  t: (_key: string) => string;
 }
 
 const LangContext = createContext<LangContextValue>({

@@ -2,14 +2,13 @@
 
 import { useState } from 'react'
 import { Menu, X, BookOpen, MapPin, Radio, Timer, Users, Globe, Info } from 'lucide-react'
-import { useT, useLang, useSetLang } from 'src/locale'
+import { useLang, useSetLang } from 'src/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/components/ui/card'
 import { Button } from '@components/components/ui/button'
 
 export default function ManualPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('getting-started')
-  const t = useT()
   const lang = useLang()
   const setLang = useSetLang()
 
@@ -416,7 +415,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
               <div>
-                <strong>Observer Mode</strong>: Receives signal boat position, views other judges' positions
+                <strong>Observer Mode</strong>: Receives signal boat position, views other judges&apos; positions
               </div>
             </div>
           </CardContent>

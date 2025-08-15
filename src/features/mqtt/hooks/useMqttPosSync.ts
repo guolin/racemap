@@ -10,9 +10,9 @@ interface Options {
   /** 获取航线数据，用于发布 */
   getCourseData: () => { type: string; params: Record<string, any> };
   /** 收到管理员位置后回调（观察者端） */
-  onRecvPos?: (pos: L.LatLng) => void;
+  onRecvPos?: (_pos: L.LatLng) => void;
   /** 收到航线数据后回调 */
-  onRecvCourse?: (c: { type: string; params: Record<string, any> }) => void;
+  onRecvCourse?: (_c: { type: string; params: Record<string, any> }) => void;
 }
 
 const posTopic = (id: string) => `race/${id}/location/admin`;

@@ -1,6 +1,5 @@
 'use client';
-import { useRef, useState, useEffect, useCallback, Suspense } from 'react';
-import dynamic from 'next/dynamic';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import L from 'leaflet';
 import { toast } from 'sonner';
 import { Share } from 'lucide-react';
@@ -31,17 +30,7 @@ import { useNetworkStatus } from '@features/network/hooks/useNetworkStatus';
 import { NetworkIndicator } from './components/NetworkIndicator';
 import { ObserversList } from './components/ObserversList';
 
-// 动态导入Leaflet相关组件
-const LeafletMap = dynamic(() => import('./components/LeafletMap'), {
-  ssr: false,
-  loading: () => <div className="w-full h-full bg-gray-100 animate-pulse" />
-});
 
-// 动态导入MQTT相关组件
-const MqttComponents = dynamic(() => import('./components/MqttComponents'), {
-  ssr: false,
-  loading: () => null
-});
 
 interface Props {
   courseId: string;
@@ -141,7 +130,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     if (!myMarkerRef.current) {
       const size = 28;
       // 调整 viewBox 和箭头位置，使箭头尖端在 y=0
-      const iconHtml = `<div style=\"width:${size}px;height:${size}px;font-size:0;\"><svg viewBox='0 0 100 80' width='${size}' height='${size}' style='display:block'><polygon points='50,0 85,80 50,60 15,80' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
+      const iconHtml = `<div style="width:${size}px;height:${size}px;font-size:0;"><svg viewBox='0 0 100 80' width='${size}' height='${size}' style='display:block'><polygon points='50,0 85,80 50,60 15,80' fill='#0078ff' stroke='#ffffff' stroke-width='6'></polygon></svg></div>`;
       myMarkerRef.current = L.marker(gps.latLng, {
         icon: L.divIcon({ 
           html: iconHtml, 
@@ -260,7 +249,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   });
 
   // 统一在线用户管理
-  const { allUsers, onlineCount, otherUsers, admin } = useOnlineUsers(
+  const { onlineCount, otherUsers } = useOnlineUsers(
     courseId, 
     isAdmin ? 'ADMIN' : observerIdRef.current
   );

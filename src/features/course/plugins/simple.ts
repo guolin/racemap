@@ -95,13 +95,7 @@ export const simpleCoursePlugin: CoursePlugin<SimpleParams> = {
       { color: '#1f77b4', weight: 3 }
     );
 
-    const markStyle: L.CircleMarkerOptions = {
-      radius: 6,
-      color: '#000',
-      weight: 1,
-      fillColor: '#fff',
-      fillOpacity: 1,
-    };
+
 
     const lang = getCurrentLang();
     const tooltips = simpleCoursePlugin.i18n![lang].tooltips;

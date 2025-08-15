@@ -1,4 +1,3 @@
-import { InfoCard } from '@shared/ui/InfoCard';
 import { useT } from 'src/locale';
 
 interface Props {

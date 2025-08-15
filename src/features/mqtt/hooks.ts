@@ -23,7 +23,7 @@ export function useMqttClient() {
  */
 export function useMqttSubscription(
   topic: string,
-  handler: (topic: string, payload: Uint8Array) => void,
+  handler: (_topic: string, _payload: Uint8Array) => void,
   deps: any[] = []
 ) {
   const client = useMqttClient();

@@ -5,7 +5,6 @@ import TopBar from '../../src/features/map/components/TopBar';
 import { getMqttClient } from '@features/mqtt/service';
 import { Button } from '@components/components/ui/button';
 
-const posTopic = (id: string) => `race/${id}/location/admin`;
 const routeTopic = (id: string) => `race/${id}/route`;
 const locationTopic = (id: string) => `race/${id}/location/#`;
 

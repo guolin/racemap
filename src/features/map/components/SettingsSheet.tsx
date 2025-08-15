@@ -91,7 +91,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
       {/* 抽屉内容 */}
       <div
         className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl p-5 flex flex-col gap-4 max-h-[75vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(_e) => _e.stopPropagation()}
       >
         <div className="text-center text-lg font-bold text-foreground">{t('common.course_settings')}</div>
 

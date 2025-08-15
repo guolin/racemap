@@ -1,6 +1,19 @@
 {
   "extends": ["next", "eslint:recommended"],
   "rules": {
-    "max-lines": ["error", {"max": 300, "skipBlankLines": true, "skipComments": true}]
+    "max-lines": ["error", {"max": 300, "skipBlankLines": true, "skipComments": true}],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true
+  },
+  "globals": {
+    "NodeJS": "readonly",
+    "GeolocationPosition": "readonly",
+    "GeolocationCoordinates": "readonly",
+    "GeolocationPositionError": "readonly",
+    "PositionOptions": "readonly"
   }
 } 
