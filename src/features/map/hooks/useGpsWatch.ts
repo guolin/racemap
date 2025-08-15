@@ -6,6 +6,7 @@ export interface GpsState {
   speedKts: number | null;
   headingDeg: number | null; // 航迹方向（优先 GPS heading，其次自行计算）
   ok: boolean; // 最近 2.5s 是否收到定位
+  accuracy: number | null; // GPS精度 (米)
   errorMsg: string | null;
 }
 
@@ -24,7 +25,7 @@ interface Options {
  * - 计算航迹方向：优先使用浏览器 heading，其次上一次坐标计算
  */
 export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdate }: Options = {}): GpsState {
-  const [state, setState] = useState<GpsState>({ latLng: null, speedKts: null, headingDeg: null, ok: false, errorMsg: null });
+  const [state, setState] = useState<GpsState>({ latLng: null, speedKts: null, headingDeg: null, ok: false, accuracy: null, errorMsg: null });
 
   const lastLatLngRef = useRef<L.LatLng | null>(null);
   const lastCbTsRef = useRef(0);
@@ -40,10 +41,10 @@ export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdat
     const handler = (pos: GeolocationPosition) => {
       const { latitude, longitude, heading, speed, accuracy } = pos.coords as GeolocationCoordinates & { heading: number };
       
-      // 严格精度要求：拒绝低精度数据（海上环境建议20-30米）
-      if (accuracy && accuracy > 30) {
+      // 精度要求：拒绝过于低精度的数据（室内/城市环境放宽至200米）
+      if (accuracy && accuracy > 200) {
         console.debug('[GPS] Position rejected: accuracy', accuracy, 'm');
-        return; // 没有数据好过错误数据
+        return; // 只拒绝极差的定位数据
       }
       
       // 合理性检查：防止GPS跳点（海上环境建议1-2公里）
@@ -76,6 +77,7 @@ export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdat
         speedKts: speed != null && !Number.isNaN(speed) ? speed * 1.94384 : null,
         headingDeg: trackBearing,
         ok: true,
+        accuracy: accuracy || null,
         errorMsg: null,
       };
       setState(newState);

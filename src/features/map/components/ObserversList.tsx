@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useT } from 'src/locale';
 
 interface ObserverPos {
   id: string;
@@ -11,40 +12,55 @@ interface ObserverPos {
 interface ObserversListProps {
   observers: ObserverPos[];
   currentObserverId: string;
+  isVisible?: boolean;
 }
 
-export const ObserversList: React.FC<ObserversListProps> = ({ observers, currentObserverId }) => {
+export const ObserversList: React.FC<ObserversListProps> = ({ observers, currentObserverId, isVisible = true }) => {
+  const t = useT();
   const sortedObservers = useMemo(
     () => observers.filter(o => o.id !== currentObserverId).sort((a, b) => b.ts - a.ts),
     [observers, currentObserverId]
   );
 
+  if (!isVisible) return null;
+
   return (
-    <div className="absolute top-20 right-4 bg-black/80 text-white rounded-lg p-3 text-xs min-w-[180px] z-[1100]">
-      <div className="font-bold mb-2 flex items-center gap-2">
-        <span>在线裁判</span>
-        <span className="bg-blue-500 px-1.5 py-0.5 rounded">{sortedObservers.length + 1}</span>
+    <div className="absolute top-16 right-4 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-3 text-sm min-w-[200px] z-[1200]">
+      <div className="font-bold mb-3 flex items-center gap-2 text-foreground">
+        <span>{t('observers.title')}</span>
+        <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs">
+          {sortedObservers.length + 1}
+        </span>
       </div>
 
-      <div className="flex items-center gap-2 mb-2 p-1 bg-blue-500/20 rounded">
-        <div className="w-2 h-2 rounded-full bg-blue-400" />
-        <span className="font-medium">{currentObserverId} (我)</span>
+      <div className="flex items-center gap-2 mb-2 p-2 bg-primary/10 rounded border border-primary/20">
+        <div className="w-2 h-2 rounded-full bg-primary" />
+        <span className="font-medium text-foreground">{currentObserverId}</span>
+        <span className="text-xs text-muted-foreground">({t('observers.me')})</span>
       </div>
 
-      {sortedObservers.map(obs => {
-        const timeDiff = Date.now() - obs.ts;
-        const isRecent = timeDiff < 10_000;
-        const secondsAgo = Math.round(timeDiff / 1000);
-        return (
-          <div key={obs.id} className="flex items-center gap-2 mb-1 p-1 rounded hover:bg-white/10">
-            <div className={`w-2 h-2 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
-            <span className="flex-1">{obs.id}</span>
-            <span className={`text-xs ${isRecent ? 'text-green-300' : 'text-yellow-300'}`}>{secondsAgo}s前</span>
-          </div>
-        );
-      })}
+      <div className="max-h-48 overflow-y-auto">
+        {sortedObservers.map(obs => {
+          const timeDiff = Date.now() - obs.ts;
+          const isRecent = timeDiff < 10_000;
+          const secondsAgo = Math.round(timeDiff / 1000);
+          return (
+            <div key={obs.id} className="flex items-center gap-2 mb-1 p-2 rounded hover:bg-muted/50 transition-colors">
+              <div className={`w-2 h-2 rounded-full ${isRecent ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <span className="flex-1 text-foreground">{obs.id}</span>
+              <span className={`text-xs ${isRecent ? 'text-green-600' : 'text-yellow-600'}`}>
+                {secondsAgo}{t('observers.seconds_ago')}
+              </span>
+            </div>
+          );
+        })}
+      </div>
 
-      {sortedObservers.length === 0 && <div className="text-gray-400 text-center py-2">暂无其他裁判在线</div>}
+      {sortedObservers.length === 0 && (
+        <div className="text-muted-foreground text-center py-3 text-sm">
+          {t('observers.no_others')}
+        </div>
+      )}
     </div>
   );
 }; 

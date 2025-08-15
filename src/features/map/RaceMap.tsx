@@ -40,6 +40,7 @@ interface Props {
 export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const t = useT();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [observersListVisible, setObserversListVisible] = useState(false);
   const mapRef = useLeafletMap('map-root');
   
   // 使用动态视口高度
@@ -297,13 +298,19 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       <div id="map-root" className="w-full h-full" />
       <TopBar 
         center={centerContent} 
-        right={<OnlineCount count={onlineCount} />} 
+        right={
+          <OnlineCount 
+            count={onlineCount} 
+            isActive={observersListVisible}
+            onClick={() => setObserversListVisible(v => !v)}
+          />
+        } 
       />
       <ObserversLayer observers={observers} map={mapRef.current} />
       {/* Bottom-left compact network indicator */}
       <div className="absolute left-2 bottom-2 z-[1100] pointer-events-none">
         <div className="pointer-events-auto">
-          <NetworkIndicator status={networkStatus} compact />
+          <NetworkIndicator status={networkStatus} gpsState={gps} compact />
         </div>
       </div>
       {!isAdmin && (
@@ -315,7 +322,8 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
             heading: u.heading ?? null,
             ts: u.ts
           }))} 
-          currentObserverId={observerIdRef.current} 
+          currentObserverId={observerIdRef.current}
+          isVisible={observersListVisible}
         />
       )}
       {!isAdmin && (
