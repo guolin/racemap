@@ -9,36 +9,7 @@ module.exports = {
   theme: {
   	extend: {
   		colors: {
-  			primary: {
-  				'100': 'var(--primary-100)',
-  				'200': 'var(--primary-200)',
-  				'300': 'var(--primary-300)',
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			accent: {
-  				'100': 'var(--accent-100)',
-  				'200': 'var(--accent-200)',
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			text: {
-  				'100': 'var(--text-100)',
-  				'200': 'var(--text-200)'
-  			},
-  			bg: {
-  				'100': 'var(--bg-100)',
-  				'200': 'var(--bg-200)',
-  				'300': 'var(--bg-300)'
-  			},
-  			gray: {
-  				'200': 'var(--bg-200)',
-  				'500': 'var(--bg-300)',
-  				'600': 'var(--bg-300)',
-  				'700': 'var(--bg-300)',
-  				'800': 'var(--text-200)',
-  				'900': 'var(--text-100)'
-  			},
+  			/* === 基础色彩 === */
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -49,27 +20,52 @@ module.exports = {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
   			},
+  			
+  			/* === 品牌色彩 === */
+  			primary: {
+  				DEFAULT: 'hsl(var(--primary))',
+  				foreground: 'hsl(var(--primary-foreground))',
+  				hover: 'hsl(var(--primary-hover))'
+  			},
+  			
+  			/* === 中性色彩 === */
   			secondary: {
   				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  				foreground: 'hsl(var(--secondary-foreground))',
+  				hover: 'hsl(var(--secondary-hover))'
   			},
   			muted: {
   				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  				foreground: 'hsl(var(--muted-foreground))',
+  				hover: 'hsl(var(--muted-hover))'
+  			},
+  			
+  			/* === 功能色彩 === */
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(var(--warning))',
+  				foreground: 'hsl(var(--warning-foreground))'
   			},
   			destructive: {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+  			
+  			/* === 边框和表单 === */
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+  			
+  			/* === 图表色彩 === */
   			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
+  				water: 'hsl(var(--chart-water))',
+  				wind: 'hsl(var(--chart-wind))',
+  				course: 'hsl(var(--chart-course))',
+  				boat: 'hsl(var(--chart-boat))',
+  				mark: 'hsl(var(--chart-mark))'
   			}
   		},
   		borderRadius: {

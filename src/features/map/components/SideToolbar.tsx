@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
-import { FiAlertCircle, FiSettings } from 'react-icons/fi';
-import { TbLocation } from 'react-icons/tb';
+import { AlertCircle, Settings, MapPin } from 'lucide-react';
 import { useT } from 'src/locale';
 
 interface Props {
@@ -15,40 +14,34 @@ interface Props {
   onInfo?: () => void;
 }
 
-const btnStyle: React.CSSProperties = {
-  width: 56,
-  height: 56,
-  borderRadius: 12,
-  border: 'none',
-  background: '#fff',
-  fontSize: 24,
-  cursor: 'pointer',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-};
-
 const SideToolbar: React.FC<Props> = ({ isAdmin, onLocate, onSettings, onInfo }) => {
   const t = useT();
+  
+  const buttonClass = "w-14 h-14 rounded-xl border-0 bg-card text-foreground cursor-pointer shadow-md hover:bg-muted-hover transition-colors flex items-center justify-center";
+  
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 100,
-        right: 12,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        zIndex: 1000,
-      }}
-    >
-      <button style={btnStyle} title={t('common.locate_tooltip')} onClick={onLocate}>
-        <TbLocation style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+    <div className="absolute top-[100px] right-3 flex flex-col gap-3 z-[1000]">
+      <button 
+        className={buttonClass}
+        title={t('common.locate_tooltip')} 
+        onClick={onLocate}
+      >
+        <MapPin className="w-6 h-6" />
       </button>
-      <button style={btnStyle} title={t('common.info_tooltip')} onClick={onInfo}>
-        <FiAlertCircle style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+      <button 
+        className={buttonClass}
+        title={t('common.info_tooltip')} 
+        onClick={onInfo}
+      >
+        <AlertCircle className="w-6 h-6" />
       </button>
       {isAdmin && (
-        <button style={btnStyle} onClick={onSettings} title={t('common.settings_tooltip')}>
-          <FiSettings style={{ width: 24, height: 24, display: 'block', margin: '0 auto' }} />
+        <button 
+          className={buttonClass}
+          onClick={onSettings} 
+          title={t('common.settings_tooltip')}
+        >
+          <Settings className="w-6 h-6" />
         </button>
       )}
     </div>

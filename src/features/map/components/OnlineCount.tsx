@@ -1,5 +1,5 @@
 import React from 'react';
-import { PiAnchorBold } from 'react-icons/pi';
+import { Anchor } from 'lucide-react';
 
 interface OnlineCountProps {
   count: number;
@@ -12,7 +12,7 @@ interface OnlineCountProps {
 const OnlineCount: React.FC<OnlineCountProps> = ({ count, className = '' }) => {
   return (
     <div className={`flex items-center gap-1 text-base font-medium ${className}`}>
-      <PiAnchorBold style={{ width: 20, height: 20 }} />
+      <Anchor size={20} />
       {count}
     </div>
   );

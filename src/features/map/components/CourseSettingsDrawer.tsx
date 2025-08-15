@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
-import { IoArrowBackOutline } from 'react-icons/io5';
+import { ArrowLeft } from 'lucide-react';
 import { useT } from 'src/locale';
 import L from 'leaflet';
 import { useCourseStore } from '@features/course/store';
@@ -119,9 +119,9 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
             size="sm"
             onClick={handleSave}
             aria-label={t('common.save')}
-            className="text-foreground hover:bg-accent flex items-center gap-1 px-2 py-1 text-base font-medium"
+            className="text-foreground hover:bg-muted-hover flex items-center gap-1 px-2 py-1 text-base font-medium"
           >
-            <IoArrowBackOutline style={{ width: 20, height: 20 }} />
+            <ArrowLeft size={20} />
             <span className="ml-1">{t('common.save')}</span>
           </Button>
         }

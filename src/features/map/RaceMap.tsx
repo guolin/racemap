@@ -1,16 +1,9 @@
 'use client';
-// 引入 leaflet 旋转插件（仅客户端）
-if (typeof window !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  require('leaflet-rotate');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  require('leaflet-rotatedmarker');
-}
-
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import L from 'leaflet';
 import { toast } from 'sonner';
-import { GoShareAndroid } from 'react-icons/go';
+import { Share } from 'lucide-react';
 import { useLeafletMap } from '@features/map/hooks/useLeaflet';
 import { useDeviceOrientation } from '@features/map/hooks/useDeviceOrientation';
 import { useGpsWatch } from '@features/map/hooks/useGpsWatch';
@@ -37,6 +30,18 @@ import { useMqttClient } from '@features/mqtt/hooks';
 import { useNetworkStatus } from '@features/network/hooks/useNetworkStatus';
 import { NetworkIndicator } from './components/NetworkIndicator';
 import { ObserversList } from './components/ObserversList';
+
+// 动态导入Leaflet相关组件
+const LeafletMap = dynamic(() => import('./components/LeafletMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-gray-100 animate-pulse" />
+});
+
+// 动态导入MQTT相关组件
+const MqttComponents = dynamic(() => import('./components/MqttComponents'), {
+  ssr: false,
+  loading: () => null
+});
 
 interface Props {
   courseId: string;
@@ -66,11 +71,11 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       variant="ghost"
       onClick={handleShare}
       aria-label="分享比赛链接"
-      className="text-foreground hover:bg-accent px-3 py-2 h-auto"
+      className="text-foreground hover:bg-muted-hover px-3 py-2 h-auto"
     >
       <div className="flex items-center gap-2">
         <span className="font-bold text-lg">{courseId}</span>
-        <GoShareAndroid style={{ width: 20, height: 20 }} />
+        <Share size={20} />
       </div>
     </Button>
   );
@@ -86,11 +91,11 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   useDeviceOrientation(); // currently unused but can be hooked to mapBearing if needed
   const gps = useGpsWatch({});
   // signal船（origin）坐标（从 MQTT 获取）
-  const [origin, setOrigin] = useState<L.LatLng | null>(null);
+  const [origin, setOrigin] = useState<any>(null);
   const { drawCourse, renderState } = useMapRenderer(mapRef);
 
   // mqtt sync
-  const lastPosRef = useRef<L.LatLng | null>(null);
+  const lastPosRef = useRef<any>(null);
   if (gps.latLng) lastPosRef.current = gps.latLng;
   const type = useCourseStore((s)=>s.type);
   const params = useCourseStore((s)=>s.params);

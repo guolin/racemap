@@ -11,10 +11,10 @@ interface NetworkIndicatorProps {
 export const NetworkIndicator: React.FC<NetworkIndicatorProps> = ({ status, className = '', compact = false }) => {
   const t = useT();
   const statusConfig = {
-    online: { color: compact ? 'bg-emerald-500/80' : 'bg-green-500', icon: '🟢', priority: 'low' },
-    offline: { color: compact ? 'bg-red-500/80' : 'bg-red-500', icon: '🔴', priority: 'critical' },
-    mqtt_error: { color: compact ? 'bg-amber-500/80' : 'bg-yellow-500', icon: '🟡', priority: 'high' },
-    stale: { color: compact ? 'bg-orange-500/80' : 'bg-orange-500', icon: '🟠', priority: 'medium' },
+    online: { color: compact ? 'bg-success/80' : 'bg-success', icon: '🟢', priority: 'low' },
+    offline: { color: compact ? 'bg-destructive/80' : 'bg-destructive', icon: '🔴', priority: 'critical' },
+    mqtt_error: { color: compact ? 'bg-warning/80' : 'bg-warning', icon: '🟡', priority: 'high' },
+    stale: { color: compact ? 'bg-warning/60' : 'bg-warning/80', icon: '🟠', priority: 'medium' },
   } as const;
 
   const config = statusConfig[status.status];

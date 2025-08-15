@@ -85,40 +85,18 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.4)',
-        zIndex: 2000,
-      }}
+      className="absolute inset-0 bg-black/40 z-[2000]"
       onClick={onClose}
     >
       {/* 抽屉内容 */}
       <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: '#fff',
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-          padding: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          maxHeight: '75vh',
-          overflowY: 'auto',
-        }}
+        className="absolute bottom-0 left-0 right-0 bg-card rounded-t-2xl p-5 flex flex-col gap-4 max-h-[75vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center text-lg font-bold text-foreground">{t('common.course_settings')}</div>
 
         {/* 航线类型切换 */}
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
+        <label className="flex flex-col gap-1 text-sm text-foreground">
           {t('common.course_type')}
           <Select value={type} onValueChange={(value) => setType(value as CourseTypeId)}>
             <SelectTrigger>
@@ -151,7 +129,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
           )
         )}
 
-        <Button onClick={commitAllAndClose} className="bg-orange-500 text-white">
+        <Button onClick={commitAllAndClose} variant="default">
           {t('common.close')}
         </Button>
       </div>

@@ -1,8 +1,7 @@
 'use client';
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { GoHome } from 'react-icons/go';
-import { IoArrowBackOutline } from 'react-icons/io5';
+import { Home, ArrowLeft } from 'lucide-react';
 import { useT } from 'src/locale';
 import { Button } from '@components/components/ui/button';
 
@@ -37,9 +36,9 @@ const TopBar: React.FC<TopBarProps> = ({
           size="icon"
           onClick={handleBack}
           aria-label="返回"
-          className="text-foreground hover:bg-accent"
+          className="text-foreground hover:bg-muted-hover"
         >
-          <IoArrowBackOutline style={{ width: 24, height: 24 }} />
+          <ArrowLeft size={24} />
         </Button>
       )}
       <Button
@@ -49,7 +48,7 @@ const TopBar: React.FC<TopBarProps> = ({
         aria-label={t('common.home')}
         className="text-foreground"
       >
-        <GoHome style={{ width: 24, height: 24 }} />
+        <Home size={24} />
       </Button>
     </>
   );

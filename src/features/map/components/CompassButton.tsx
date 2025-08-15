@@ -10,33 +10,17 @@ interface Props {
 const CompassButton: React.FC<Props> = ({ bearing, onToggle, top = 68 }) => {
   return (
     <button
-      style={{
-        position: 'absolute',
-        top,
-        left: 12,
-        width: 48,
-        height: 48,
-        borderRadius: 12,
-        border: 'none',
-        background: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        cursor: 'pointer',
-      }}
+      className="absolute left-3 w-12 h-12 rounded-xl border-0 bg-card text-foreground flex items-center justify-center z-[1000] cursor-pointer shadow-md hover:bg-muted-hover transition-colors"
+      style={{ top }}
       onClick={onToggle}
     >
       <div
-        style={{
-          transform: `rotate(${bearing}deg)`,
-          transition: 'transform 0.3s',
-          fontSize: 24,
-        }}
+        className="transition-transform duration-300 text-2xl"
+        style={{ transform: `rotate(${bearing}deg)` }}
       >
-        <svg width="32" height="32" viewBox="0 0 100 100" style={{ display: 'block' }}>
-          <circle cx="50" cy="50" r="45" stroke="#333" strokeWidth="6" fill="#fff" />
-          <polygon points="50,18 60,55 50,46 40,55" fill="#ff4500" stroke="#333" strokeWidth="2" />
+        <svg width="32" height="32" viewBox="0 0 100 100" className="block">
+          <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="6" fill="transparent" />
+          <polygon points="50,18 60,55 50,46 40,55" fill="hsl(var(--chart-course))" stroke="currentColor" strokeWidth="2" />
         </svg>
       </div>
     </button>
