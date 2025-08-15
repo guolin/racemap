@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import type { ObserverPos } from '@features/mqtt/hooks/useObserversPos';
+
+interface ObserverPos {
+  id: string;
+  lat: number;
+  lng: number;
+  heading: number | null;
+  ts: number;
+}
 
 interface ObserversListProps {
   observers: ObserverPos[];

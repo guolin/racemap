@@ -16,6 +16,7 @@ interface Options {
 }
 
 const posTopic = (id: string) => `race/${id}/location/admin`;
+const presenceTopic = (id: string) => `race/${id}/presence/ADMIN`;
 
 /**
  * 封装 MQTT 连接 / 船位订阅 / 管理员定时发布。
@@ -96,13 +97,31 @@ export function useMqttPosSync({ courseId, isAdmin, getLatestPos, getCourseData,
     }
 
     try {
-      const payloadStr = JSON.stringify({ ...common, timestamp: now });
-      client.publish(posTopic(courseId), payloadStr, { retain: true, qos: 1 }, (err) => {
+      // 发布到旧主题格式（兼容性）
+      const oldPayloadStr = JSON.stringify({ ...common, timestamp: now });
+      client.publish(posTopic(courseId), oldPayloadStr, { retain: true, qos: 1 }, (err) => {
         if (err) {
-          console.error('[MQTT] Failed to publish:', err);
+          console.error('[MQTT] Failed to publish to old topic:', err);
           return;
         }
-        console.debug('[MQTT] Published position update');
+        console.debug('[MQTT] Published to old topic format');
+      });
+      
+      // 发布到新主题格式（统一presence）
+      const newPayloadStr = JSON.stringify({
+        id: 'ADMIN',
+        role: 'admin',
+        lat: pos.lat,
+        lng: pos.lng,
+        course: { type, params },
+        ts: now
+      });
+      client.publish(presenceTopic(courseId), newPayloadStr, { retain: true, qos: 1 }, (err) => {
+        if (err) {
+          console.error('[MQTT] Failed to publish to new topic:', err);
+          return;
+        }
+        console.debug('[MQTT] Published to new topic format');
         lastPayloadRef.current = dedupKey;
         lastPublishTimeRef.current = now;
       });

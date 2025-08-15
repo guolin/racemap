@@ -20,7 +20,7 @@ import { GpsPanel } from '@features/map/components/GpsPanel';
 import CompassButton from '@features/map/components/CompassButton';
 import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
 import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublish';
-import { useObserversPos, ObserverPos } from '@features/mqtt/hooks/useObserversPos';
+import { useOnlineUsers } from '@features/mqtt/hooks/useOnlineUsers';
 import { ObserversLayer } from '@features/map/components/ObserversLayer';
 import CourseSettingsDrawer from '@features/map/components/CourseSettingsDrawer';
 import BottomInfoCards from '@features/map/components/BottomInfoCards';
@@ -259,15 +259,22 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     getLatestPos,
   });
 
-  // Subscribe to all observers
-  const observersAll = useObserversPos({ 
-    raceId: courseId, 
-    observerId: observerIdRef.current 
-  });
-  const observers = observersAll.filter(o => o.id !== observerIdRef.current);
+  // 统一在线用户管理
+  const { allUsers, onlineCount, otherUsers, admin } = useOnlineUsers(
+    courseId, 
+    isAdmin ? 'ADMIN' : observerIdRef.current
+  );
   
-  // 计算在线人数：observersAll已经包含所有观察者（包括自己）
-  const onlineCount = observersAll.length;
+  // 兼容旧逻辑的观察者列表（用于ObserversLayer组件）
+  const observers = otherUsers
+    .filter(u => u.role === 'observer')
+    .map(u => ({
+      id: u.id,
+      lat: u.lat,
+      lng: u.lng,
+      heading: u.heading ?? null,
+      ts: u.ts
+    }));
   
   // 当管理员修改航线参数时，立即广播更新
   useEffect(() => {
@@ -302,7 +309,16 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
         </div>
       </div>
       {!isAdmin && (
-        <ObserversList observers={observersAll} currentObserverId={observerIdRef.current} />
+        <ObserversList 
+          observers={otherUsers.map(u => ({
+            id: u.id,
+            lat: u.lat,
+            lng: u.lng,
+            heading: u.heading ?? null,
+            ts: u.ts
+          }))} 
+          currentObserverId={observerIdRef.current} 
+        />
       )}
       {!isAdmin && (
         <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>

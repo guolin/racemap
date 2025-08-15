@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { ObserverPos } from '@features/mqtt/hooks/useObserversPos';
+
+interface ObserverPos {
+  id: string;
+  lat: number;
+  lng: number;
+  heading: number | null;
+  ts: number;
+}
 
 interface Props {
   observers: ObserverPos[];

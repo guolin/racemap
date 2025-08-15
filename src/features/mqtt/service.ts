@@ -26,9 +26,9 @@ export function getMqttClient(): MqttClient {
   const url = `${protocol}://${host}:${port}${path}`;
 
   const options: IClientOptions = {
-    reconnectPeriod: 2000,  // 恢复到2秒
-    connectTimeout: 5000,   // 恢复到5秒
-    keepalive: 60,
+    reconnectPeriod: 8000,   // 8秒重连间隔，避免频繁重连
+    connectTimeout: 15000,   // 15秒连接超时
+    keepalive: 30,           // 30秒心跳，节省流量
     clean: true,
     clientId: `rc_${Math.random().toString(16).slice(2, 10)}`,
     username: process.env.NEXT_PUBLIC_MQTT_USERNAME,
@@ -46,11 +46,12 @@ export function getMqttClient(): MqttClient {
   });
   c.on('reconnect', () => {
     console.warn('[MQTT] reconnecting… count:', ++reconnectCount);
-    if (reconnectCount > 5) {
-      console.error('[MQTT] too many reconnection attempts, closing connection');
-      c.end(true);
-      client = null;
-    }
+    // 移除重连限制，允许无限重连（适合海上环境）
+    // if (reconnectCount > 5) {
+    //   console.error('[MQTT] too many reconnection attempts, closing connection');
+    //   c.end(true);
+    //   client = null;
+    // }
   });
   c.on('error', err => {
     console.error('[MQTT] error', err);
@@ -97,15 +98,33 @@ export function publishObserverPos(
   const c = getMqttClient();
   if (!c || !c.connected) return;
 
-  const topic = `race/${raceId}/location/observer/${observerId}`;
-  const payload = JSON.stringify({ ...pos, ts: Date.now() });
+  const now = Date.now();
 
-  c.publish(topic, payload, {
+  // 发布到旧主题格式（兼容性）
+  const oldTopic = `race/${raceId}/location/observer/${observerId}`;
+  const oldPayload = JSON.stringify({ ...pos, ts: now });
+  c.publish(oldTopic, oldPayload, {
     qos: 0,
     retain: true,
     properties: {
       // MQTT v5 – expire retained message after 5 minutes (300 s)
       messageExpiryInterval: 300,
     },
+  });
+
+  // 发布到新主题格式（统一presence）
+  const newTopic = `race/${raceId}/presence/${observerId}`;
+  const newPayload = JSON.stringify({
+    id: observerId,
+    role: 'observer',
+    lat: pos.lat,
+    lng: pos.lng,
+    heading: pos.heading,
+    ts: now
+  });
+  c.publish(newTopic, newPayload, {
+    qos: 0,
+    retain: true,
+    properties: { messageExpiryInterval: 60 } // 统一60秒过期
   });
 } 

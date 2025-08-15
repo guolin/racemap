@@ -10,12 +10,12 @@ interface ObserverPosition {
 interface Options {
   raceId: string;
   observerId: string;
-  enabled?: boolean; // 是否启用位置发布，默认true
+  enabled?: boolean;
   getLatestPos: () => ObserverPosition | null;
 }
 
 /**
- * 发布观察者位置到MQTT
+ * 发布观察者位置到MQTT（使用新的统一presence系统）
  * 添加位置去重逻辑，如果位置没有变化就不发送
  */
 export function useObserverPosPublish({ raceId, observerId, enabled = true, getLatestPos }: Options) {

@@ -38,7 +38,23 @@ export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdat
     }
 
     const handler = (pos: GeolocationPosition) => {
-      const { latitude, longitude, heading, speed } = pos.coords as GeolocationCoordinates & { heading: number };
+      const { latitude, longitude, heading, speed, accuracy } = pos.coords as GeolocationCoordinates & { heading: number };
+      
+      // 严格精度要求：拒绝低精度数据（海上环境建议20-30米）
+      if (accuracy && accuracy > 30) {
+        console.debug('[GPS] Position rejected: accuracy', accuracy, 'm');
+        return; // 没有数据好过错误数据
+      }
+      
+      // 合理性检查：防止GPS跳点（海上环境建议1-2公里）
+      if (lastLatLngRef.current) {
+        const distance = lastLatLngRef.current.distanceTo(L.latLng(latitude, longitude));
+        if (distance > 2000) { // 2公里跳跃检测
+          console.debug('[GPS] Position rejected: unrealistic jump', distance, 'm');
+          return;
+        }
+      }
+
       const latlng = L.latLng(latitude, longitude);
       let trackBearing: number | null = null;
       if (heading != null && !Number.isNaN(heading)) {
@@ -69,13 +85,20 @@ export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdat
     };
 
     const errorHandler = (err: GeolocationPositionError) => {
-      setState((s) => ({ ...s, ok: false, errorMsg: `[GPS][${err.code}] ${err.message}` }));
+      let errorMessage = '';
+      switch (err.code) {
+        case 1: errorMessage = 'GPS权限被拒绝，请在设置中允许位置访问'; break;
+        case 2: errorMessage = 'GPS信号弱，请移动到开阔位置'; break;
+        case 3: errorMessage = 'GPS定位超时，请检查GPS设置'; break;
+        default: errorMessage = `GPS错误: ${err.message}`;
+      }
+      setState((s) => ({ ...s, ok: false, errorMsg: errorMessage }));
     };
 
     watchIdRef.current = navigator.geolocation.watchPosition(handler, errorHandler, {
       enableHighAccuracy: true,
-      maximumAge: 0,
-      timeout: 10000,
+      maximumAge: 0,          // 不允许缓存，确保数据新鲜
+      timeout: 20000,         // 20秒超时，给海上GPS更多时间
     });
 
     // 轮询检查最近回调
