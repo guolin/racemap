@@ -19,6 +19,13 @@ module.exports = withPWA({
   },
   // 优化webpack配置
   webpack: (config, { dev, isServer }) => {
+    // 处理 WebSocket 可选依赖
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "utf-8-validate": false,
+      "bufferutil": false,
+    };
+    
     if (!dev && !isServer) {
       // 生产环境优化
       config.optimization.splitChunks = {

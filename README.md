@@ -40,8 +40,8 @@ utils/
 1. 克隆仓库并安装依赖
    ```bash
    git clone <repo-url>
-   cd RC
-   npm install
+   cd racemap
+   pnpm install
    ```
 
 2. 配置 MQTT WebSocket 连接参数（`env.local`）
@@ -58,13 +58,13 @@ utils/
 
 3. 本地运行
    ```bash
-   npm run dev
+   pnpm dev
    # 默认 http://localhost:3000
    ```
 
 4. 构建与生产运行
    ```bash
-   npm run build && npm start
+   pnpm build && pnpm start
    ```
 
 ---
@@ -116,7 +116,7 @@ utils/
 ## 贡献指南
 
 1. Fork 仓库并新建分支 (`feat/xxx` 或 `fix/xxx`)
-2. 提交 PR 前请执行 `npm run lint && npm run build` 确保无 TypeScript / ESLint 报错
+2. 提交 PR 前请执行 `pnpm lint && pnpm build` 确保无 TypeScript / ESLint 报错
 3. PR 描述请尽可能详尽，欢迎 Issue 交流
 
 ---
@@ -132,7 +132,7 @@ MIT © 2023 Sail-Map Authors
 如需在桌面端快速模拟裁判船位置，可使用以下 Node.js 脚本：
 
 ```bash
-npm i mqtt -g
+pnpm add -g mqtt
 ```
 
 ```js
@@ -166,6 +166,22 @@ node mock.js
 ## 异常处理
 - MQTT 连接失败 / 重连：页面顶部红色条提示。
 - 浏览器定位权限拒绝：提示"无法获取定位权限"。
+- WebSocket 依赖问题：项目已配置 `utf-8-validate` 和 `bufferutil` 依赖，并在 webpack 中设置了 fallback 处理。
+
+## 技术说明
+
+### WebSocket 依赖处理
+项目使用 MQTT.js 进行实时通信，依赖 WebSocket 库。为避免 `utf-8-validate` 和 `bufferutil` 模块解析错误，已在 `next.config.js` 中配置了 webpack fallback：
+
+```javascript
+config.resolve.fallback = {
+  ...config.resolve.fallback,
+  "utf-8-validate": false,
+  "bufferutil": false,
+};
+```
+
+这确保了在浏览器环境中 WebSocket 功能正常工作。
 
 ## 本地调试帮助
 若需在无移动设备情况下模拟位置，可：
