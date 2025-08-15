@@ -49,13 +49,28 @@
     setViewport();
   }
   
-  // 防止页面被拖拽 - 只在地图页面生效
+  // 防止页面被拖拽 - 只在地图页面生效，但允许滚动容器内的滚动
   document.addEventListener('touchmove', function (event) {
     // 只在地图页面或有 data-map-page 属性的页面阻止 touchmove
     const isMapPage = document.body.classList.contains('map-page') || 
                       document.querySelector('[data-map-page]');
     
-    if (isMapPage && event.scale !== 1) {
+    if (!isMapPage) return; // 非地图页面直接放行
+    
+    // 地图页面中，检查是否在可滚动容器内
+    let target = event.target;
+    while (target && target !== document.body) {
+      const computedStyle = window.getComputedStyle(target);
+      // 如果是可滚动容器，允许滚动
+      if (computedStyle.overflowY === 'auto' || computedStyle.overflowY === 'scroll' ||
+          computedStyle.overflow === 'auto' || computedStyle.overflow === 'scroll') {
+        return; // 允许滚动
+      }
+      target = target.parentElement;
+    }
+    
+    // 只有当不在滚动容器内且有缩放时才阻止
+    if (event.scale !== 1) {
       event.preventDefault();
     }
   }, { passive: false });
