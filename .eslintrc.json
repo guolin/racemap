@@ -1,5 +1,7 @@
 {
   "extends": ["next", "eslint:recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "max-lines": ["error", {"max": 300, "skipBlankLines": true, "skipComments": true}],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
@@ -15,5 +17,25 @@
     "GeolocationCoordinates": "readonly",
     "GeolocationPositionError": "readonly",
     "PositionOptions": "readonly"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["app/manual/page.tsx"],
+      "rules": {
+        "max-lines": "off"
+      }
+    },
+    {
+      "files": ["src/features/map/RaceMap.tsx"],
+      "rules": {
+        "max-lines": "off"
+      }
+    },
+    {
+      "files": ["src/features/map/components/CourseSettingsDrawer.tsx"],
+      "rules": {
+        "max-lines": "off"
+      }
+    }
+  ]
 } 

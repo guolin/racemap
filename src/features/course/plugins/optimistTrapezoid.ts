@@ -145,7 +145,6 @@ export const optimistTrapezoidPlugin: CoursePlugin<OptimistTrapezoidParams> = {
     );
 
     // 计算梯形的横风标记（Mark 2 和 3）
-    const halfAngleRad = (trapezoidAngle * Math.PI) / 180 / 2;
     const reachingDistance = windwardDistance * 1852 * 0.8; // 横风标记距离稍短
 
     // Mark 2 (左侧横风标记)
@@ -180,13 +179,13 @@ export const optimistTrapezoidPlugin: CoursePlugin<OptimistTrapezoidParams> = {
 
     // 梯形航路
     const trapezoidPath = [
-      [startLineMidLat, startLineMidLng],
-      windwardMark,
-      reachingMarkA,
-      gate4Center,
-      reachingMarkB,
-      windwardMark,
-      [startLineMidLat, startLineMidLng]
+      L.latLng(startLineMidLat, startLineMidLng),
+      L.latLng(windwardMark[0], windwardMark[1]),
+      L.latLng(reachingMarkA[0], reachingMarkA[1]),
+      L.latLng(gate4Center[0], gate4Center[1]),
+      L.latLng(reachingMarkB[0], reachingMarkB[1]),
+      L.latLng(windwardMark[0], windwardMark[1]),
+      L.latLng(startLineMidLat, startLineMidLng)
     ];
 
     const courseLine = L.polyline(trapezoidPath, { 

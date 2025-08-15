@@ -154,11 +154,11 @@ export const trianglePlugin: CoursePlugin<TriangleParams> = {
 
     // 三角形航线
     const coursePath = [
-      [startLineMidLat, startLineMidLng],
-      windwardMark,
-      reachingMarkA,
-      reachingMarkB,
-      [startLineMidLat, startLineMidLng]
+      L.latLng(startLineMidLat, startLineMidLng),
+      L.latLng(windwardMark[0], windwardMark[1]),
+      L.latLng(reachingMarkA[0], reachingMarkA[1]),
+      L.latLng(reachingMarkB[0], reachingMarkB[1]),
+      L.latLng(startLineMidLat, startLineMidLng)
     ];
 
     const courseLine = L.polyline(coursePath, { 
@@ -172,8 +172,8 @@ export const trianglePlugin: CoursePlugin<TriangleParams> = {
     for (let i = 0; i < coursePath.length - 1; i++) {
       const start = coursePath[i];
       const end = coursePath[i + 1];
-      const midLat = (start[0] + end[0]) / 2;
-      const midLng = (start[1] + end[1]) / 2;
+      const midLat = (start.lat + end.lat) / 2;
+      const midLng = (start.lng + end.lng) / 2;
       arrowPoints.push(L.latLng(midLat, midLng));
     }
 
@@ -202,7 +202,7 @@ export const trianglePlugin: CoursePlugin<TriangleParams> = {
     }).bindTooltip(tooltips.reachingMarkB);
 
     // 方向指示箭头
-    arrowPoints.forEach((point, index) => {
+    arrowPoints.forEach((point, _index) => {
       const arrowMarker = L.marker(point, {
         icon: L.divIcon({
           html: direction === 'port' ? '↺' : '↻',

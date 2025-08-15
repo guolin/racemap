@@ -68,7 +68,7 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
   const wrapLabel = (
     label: string,
     value: string,
-    onChange: (e: ChangeEvent<HTMLInputElement>) => void,
+    onChange: (_e: ChangeEvent<HTMLInputElement>) => void,
     step?: number
   ) => (
     <label className="flex flex-col gap-2 text-sm">

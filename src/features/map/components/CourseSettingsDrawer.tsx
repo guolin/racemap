@@ -183,7 +183,7 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
     const cur = Number(draft[k] ?? 0);
     const step = (plugin.paramSchema as any)[k]?.step ?? 1;
     const decimals = (plugin.paramSchema as any)[k]?.decimals;
-    let val = cur + delta;
+    let val = cur + delta * step;
     if (typeof decimals === 'number') {
       setDraft({ ...draft, [k]: val.toFixed(decimals) });
     } else {

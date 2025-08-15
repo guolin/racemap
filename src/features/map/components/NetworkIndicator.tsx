@@ -1,7 +1,6 @@
 import React from 'react';
 import type { NetworkStatus } from '@features/network/hooks/useNetworkStatus';
 import type { GpsState } from '@features/map/hooks/useGpsWatch';
-import { useT } from 'src/locale';
 
 interface NetworkIndicatorProps {
   status: NetworkStatus;
@@ -11,7 +10,6 @@ interface NetworkIndicatorProps {
 }
 
 export const NetworkIndicator: React.FC<NetworkIndicatorProps> = ({ status, gpsState, className = '', compact = false }) => {
-  const t = useT();
   
   // 判断整体状态优先级：网络 > GPS
   const getOverallStatus = () => {

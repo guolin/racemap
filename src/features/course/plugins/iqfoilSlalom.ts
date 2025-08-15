@@ -168,9 +168,9 @@ export const iqfoilSlalomPlugin: CoursePlugin<IqfoilSlalomParams> = {
     // 绘制门和路径指示
     const pathPoints: L.LatLng[] = [L.latLng(startCenter[0], startCenter[1])];
 
-    gates.forEach(({ portGate, starboardGate, gateNumber }, index) => {
-      // 门连线
-      const gateLine = L.polyline([portGate, starboardGate], {
+          gates.forEach(({ portGate, starboardGate, gateNumber }, _index) => {
+        // 门连线
+        const gateLine = L.polyline([portGate, starboardGate], {
         color: '#d62728',
         weight: 3,
       });
