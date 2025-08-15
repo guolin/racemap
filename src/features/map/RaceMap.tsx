@@ -291,10 +291,19 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const mqttClient = useMqttClient();
   const networkStatus = useNetworkStatus(mqttClient);
 
+  // 为地图页面添加CSS识别标识
+  useEffect(() => {
+    document.body.classList.add('map-page');
+    return () => {
+      document.body.classList.remove('map-page');
+    };
+  }, []);
+
   return (
     <div 
       className="relative w-screen" 
       style={{ height: viewportHeight > 0 ? viewportHeight : '100vh' }}
+      data-map-page
     >
       <div id="map-root" className="w-full h-full" />
       <TopBar 
