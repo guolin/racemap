@@ -49,9 +49,13 @@
     setViewport();
   }
   
-  // 防止页面被拖拽
+  // 防止页面被拖拽 - 只在地图页面生效
   document.addEventListener('touchmove', function (event) {
-    if (event.scale !== 1) {
+    // 只在地图页面或有 data-map-page 属性的页面阻止 touchmove
+    const isMapPage = document.body.classList.contains('map-page') || 
+                      document.querySelector('[data-map-page]');
+    
+    if (isMapPage && event.scale !== 1) {
       event.preventDefault();
     }
   }, { passive: false });
