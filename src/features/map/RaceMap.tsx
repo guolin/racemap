@@ -328,7 +328,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       )}
       {!isAdmin && (
         <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>
-          <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} onClick={() => setGpsTipVisible(v=>!v)} />
+          <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} onClick={() => setGpsTipVisible(v=>!v)} showStatusDot={false} />
           {gpsTipVisible && lastGpsInfo && (
             <div style={{ marginTop: 4, fontSize: 10, lineHeight: 1.3, textAlign: 'center', background:'rgba(255,255,255,0.9)', padding:'4px 6px', borderRadius:4 }}>
               {new Date(lastGpsInfo.ts).toLocaleTimeString()}<br />
