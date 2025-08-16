@@ -13,7 +13,7 @@ interface CourseState {
   /** 局部更新 params */
   setParams: (_patch: Record<string, any>) => void;
 
-  // --- 兼容旧字段（仅 simple 航线生效，后续可移除） ---
+  // --- 兼容旧字段（仅 windwardLeeward 航线生效，后续可移除） ---
   axis: number;
   distanceNm: number;
   startLineM: number;
@@ -23,19 +23,19 @@ interface CourseState {
   setAll: (_a: number, _d: number, _s: number) => void;
 }
 
-const defaultSimple = registry.simple.defaultParams;
+const defaultWindwardLeeward = registry.windwardLeeward.defaultParams;
 
 export const useCourseStore = create<CourseState>()(
   persist(
     (set, _get) => ({
       // ---- state ----
-      type: 'simple',
-      params: { ...defaultSimple },
+      type: 'windwardLeeward',
+      params: { ...defaultWindwardLeeward },
 
       // legacy mirror values
-      axis: defaultSimple.axis,
-      distanceNm: defaultSimple.distanceNm,
-      startLineM: defaultSimple.startLineM,
+      axis: defaultWindwardLeeward.axis,
+      distanceNm: defaultWindwardLeeward.distanceNm,
+      startLineM: defaultWindwardLeeward.startLineM,
 
       // ---- actions ----
       setType: (_t) => {
@@ -75,17 +75,17 @@ export const useCourseStore = create<CourseState>()(
       // ---- legacy setters ----
       setAxis: (_v) => set((state) => ({
         axis: _v,
-        params: state.type === 'simple' ? { ...state.params, axis: _v } : state.params,
+        params: state.type === 'windwardLeeward' ? { ...state.params, axis: _v } : state.params,
       })),
 
       setDistanceNm: (_v) => set((state) => ({
         distanceNm: _v,
-        params: state.type === 'simple' ? { ...state.params, distanceNm: _v } : state.params,
+        params: state.type === 'windwardLeeward' ? { ...state.params, distanceNm: _v } : state.params,
       })),
 
       setStartLineM: (_v) => set((state) => ({
         startLineM: _v,
-        params: state.type === 'simple' ? { ...state.params, startLineM: _v } : state.params,
+        params: state.type === 'windwardLeeward' ? { ...state.params, startLineM: _v } : state.params,
       })),
 
       setAll: (_a, _d, _s) => set((state) => ({
@@ -93,7 +93,7 @@ export const useCourseStore = create<CourseState>()(
         distanceNm: _d,
         startLineM: _s,
         params:
-          state.type === 'simple'
+          state.type === 'windwardLeeward'
             ? { ...state.params, axis: _a, distanceNm: _d, startLineM: _s }
             : state.params,
       })),
@@ -106,7 +106,7 @@ export const useCourseStore = create<CourseState>()(
           // old shape: { axis, distanceNm, startLineM }
           const { axis = 40, distanceNm = 0.9, startLineM = 100 } = persistedState as any;
           return {
-            type: 'simple',
+            type: 'windwardLeeward',
             params: { axis, distanceNm, startLineM },
             axis,
             distanceNm,

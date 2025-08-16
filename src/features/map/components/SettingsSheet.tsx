@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@components/components/ui/select';
+import { Switch } from '@components/components/ui/switch';
 
 interface Props {
   isVisible: boolean;
@@ -117,8 +118,20 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
         {plugin.SettingsPanel ? (
           <plugin.SettingsPanel params={params} setParams={setParams} />
         ) : (
-          Object.entries(plugin.paramSchema).map(([k, cfg]: any) =>
-            React.cloneElement(
+          Object.entries(plugin.paramSchema).map(([k, cfg]: any) => {
+            // boolean -> Switch
+            if (cfg.type === 'boolean') {
+              const label = plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k;
+              const checked = (draft[k] ?? String(params[k] ?? cfg.default ?? 'false')) === 'true';
+              return (
+                <label key={k} className="flex items-center justify-between gap-3 text-sm">
+                  <span>{label}</span>
+                  <Switch checked={checked} onCheckedChange={(v) => setDraft((d) => ({ ...d, [k]: String(v) }))} />
+                </label>
+              );
+            }
+            // number -> input
+            return React.cloneElement(
               wrapLabel(
                 plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k,
                 draft[k] ?? String(params[k] ?? ''),
@@ -126,8 +139,8 @@ const SettingsSheet: React.FC<Props> = ({ isVisible, onClose }) => {
                 cfg.step
               ),
               { key: k }
-            )
-          )
+            );
+          })
         )}
 
         <Button onClick={commitAllAndClose} variant="default">

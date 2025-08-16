@@ -383,7 +383,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
           });
         }}
       />
-      <BottomInfoCards courseAxis={courseAxisNum} courseSizeNm={courseSizeNm} />
+      {!drawerOpen && <BottomInfoCards courseAxis={courseAxisNum} courseSizeNm={courseSizeNm} />}
     </div>
   );
 }

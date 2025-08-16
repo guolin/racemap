@@ -69,8 +69,8 @@
       target = target.parentElement;
     }
     
-    // 只有当不在滚动容器内且有缩放时才阻止
-    if (event.scale !== 1) {
+    // 关键：只有多点触摸时才阻止（防止页面缩放），单点触摸（地图拖拽）则放行
+    if (event.touches && event.touches.length > 1) {
       event.preventDefault();
     }
   }, { passive: false });

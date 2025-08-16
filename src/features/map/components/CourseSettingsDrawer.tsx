@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@components/components/ui/select';
+import { Switch } from '@components/components/ui/switch';
 import TopBar from './TopBar';
 
 // Ensure leaflet rotate plugin available
@@ -60,6 +61,7 @@ function parseDraftBySchema(draft: Record<string, string>, schema: any): Record<
 export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props) {
   const t = useT();
   const params = useCourseStore((s) => s.params);
+  const setType = useCourseStore((s) => s.setType);
   const setParams = useCourseStore((s) => s.setParams);
   const type = useCourseStore((s) => s.type);
   const plugin = registry[type];
@@ -72,6 +74,13 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
   useEffect(() => {
     if (isOpen) setDraft(toStringMap(params));
   }, [isOpen, params]);
+
+  // 当持久化的数据中包含已删除的插件类型时，回退到 windwardLeeward
+  useEffect(() => {
+    if (!plugin) {
+      setType('windwardLeeward');
+    }
+  }, [plugin, setType]);
 
   // sync open state
   useEffect(() => {
@@ -92,6 +101,7 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
 
   // 保存：将draft按schema转为准确类型再写入主分支
   const handleSave = () => {
+    if (!plugin) return;
     setParams(parseDraftBySchema(draft, plugin.paramSchema));
     setTimeout(() => {
       onSave();
@@ -109,7 +119,8 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
   return (
     <div
       ref={drawerRef}
-      className={`fixed inset-0 z-[2000] bg-white flex flex-col transform transition-transform duration-300 ${animClass}`}
+      className={`fixed inset-0 z-[3000] bg-white flex flex-col transform transition-transform duration-300 ${animClass}`}
+      style={{ backgroundColor: 'white' }}
     >
       {/* Top Bar */}
       <TopBar
@@ -117,12 +128,12 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleSave}
-            aria-label={t('common.save')}
+            onClick={handleCancel}
+            aria-label={t('common.cancel')}
             className="text-foreground hover:bg-muted-hover flex items-center gap-1 px-2 py-1 text-base font-medium"
           >
             <ArrowLeft size={20} />
-            <span className="ml-1">{t('common.save')}</span>
+            <span className="ml-1">{t('common.cancel')}</span>
           </Button>
         }
         center={t('common.course_settings')}
@@ -130,19 +141,20 @@ export default function CourseSettingsDrawer({ isOpen, onClose, onSave }: Props)
           <Button
             variant="outline"
             size="sm"
-            onClick={handleCancel}
-            aria-label={t('common.cancel')}
+            onClick={handleSave}
+            aria-label={t('common.save')}
             className="font-medium text-gray-500 border-gray-300 px-3 py-1"
           >
-            {t('common.cancel')}
+            {t('common.save')}
           </Button>
         }
+        className="z-[3001]"
       />
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4 relative pt-14">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4 relative pt-14 bg-white">
         {/* Preview */}
         <div className="w-full max-w-[600px] m-2 mx-auto aspect-[4/3] bg-[#f9f9f9] border border-neutral-200 flex items-center justify-center">
-          <PreviewMap params={parseDraftBySchema(draft, plugin.paramSchema)} />
+          <PreviewMap params={parseDraftBySchema(draft, plugin?.paramSchema ?? {})} />
         </div>
         {/* Form */}
         <div className="flex-1 md:w-1/2">
@@ -159,6 +171,7 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
   const type = useCourseStore((s) => s.type);
   const setType = useCourseStore((s) => s.setType);
   const plugin = registry[type];
+  if (!plugin) return null;
 
   // 移除自定义样式，使用UI组件的默认样式
 
@@ -183,7 +196,7 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
     const cur = Number(draft[k] ?? 0);
     const step = (plugin.paramSchema as any)[k]?.step ?? 1;
     const decimals = (plugin.paramSchema as any)[k]?.decimals;
-    let val = cur + delta * step;
+    let val = cur + delta; // 直接使用 delta，不需要乘以 step
     if (typeof decimals === 'number') {
       setDraft({ ...draft, [k]: val.toFixed(decimals) });
     } else {
@@ -245,8 +258,30 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
             );
           }
           
+          // 处理布尔类型（Switch）
+          if (cfg.type === 'boolean') {
+            const checked = (draft[k] ?? String(cfg.default ?? 'false')) === 'true';
+            return (
+              <div key={k} className="flex items-center gap-3" style={{ fontSize: 14 }}>
+                <span className="flex-1 min-w-[6rem]">{plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k}</span>
+                <Switch
+                  checked={checked}
+                  onCheckedChange={(val) => setDraft({ ...draft, [k]: String(val) })}
+                />
+              </div>
+            );
+          }
+
           // 处理数字类型（原有逻辑）
-          const step = cfg.step ?? 1;
+          const step = (plugin.paramSchema as any)[k]?.step ?? 1;
+          const min = (plugin.paramSchema as any)[k]?.min;
+          const max = (plugin.paramSchema as any)[k]?.max;
+          const currentValue = Number(draft[k] ?? 0);
+          
+          // 检查是否应该禁用按钮
+          const isDecreaseDisabled = min !== undefined && currentValue <= min;
+          const isIncreaseDisabled = max !== undefined && currentValue >= max;
+          
           return (
             <div key={k} className="flex items-center gap-3" style={{ fontSize: 14 }}>
               <span className="flex-1 min-w-[6rem]">{plugin.i18n?.[lang]?.labels[k] ?? cfg.label ?? k}</span>
@@ -255,6 +290,7 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
                 size="icon"
                 onClick={() => adjust(k, -step)}
                 aria-label="decrease"
+                disabled={isDecreaseDisabled}
               >
                 −
               </Button>
@@ -264,6 +300,8 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
                 onChange={onNumChange(k)}
                 onBlur={onNumBlur(k)}
                 step={step}
+                min={min}
+                max={max}
                 className="w-24 text-center"
               />
               <Button
@@ -271,6 +309,7 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
                 size="icon"
                 onClick={() => adjust(k, step)}
                 aria-label="increase"
+                disabled={isIncreaseDisabled}
               >
                 +
               </Button>
@@ -336,6 +375,9 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
           svg.style.margin = 'auto';
         }
         
+        // 设置较低的z-index，避免遮挡抽屉
+        container.style.zIndex = '1000';
+        
         L.DomEvent.on(button, 'click', L.DomEvent.stopPropagation)
           .on(button, 'click', L.DomEvent.preventDefault)
           .on(button, 'click', () => {
@@ -351,16 +393,15 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
     new FitBoundsControl().addTo(mapRef.current);
     
     // 初始化时绘制航线并调整视图
-    const plugin = registry[type];
-    if (plugin) {
-      const origin = L.latLng(0, 0);
-      const newGroup = plugin.draw(mapRef.current, origin, params, null);
-      groupRef.current = newGroup;
-      
-      // 自动调整视图让航线充满全屏
-      if (newGroup && newGroup.getBounds && newGroup.getBounds().isValid()) {
-        mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
-      }
+    const p = registry[type];
+    if (!p) return;
+    const origin = L.latLng(0, 0);
+    const newGroup = p.draw(mapRef.current, origin, params, null);
+    groupRef.current = newGroup;
+    
+    // 自动调整视图让航线充满全屏
+    if (newGroup && newGroup.getBounds && newGroup.getBounds().isValid()) {
+      mapRef.current.fitBounds(newGroup.getBounds(), { padding: [10, 10] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -381,8 +422,8 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
   // 重绘：所有参数变化都重绘航线
   useEffect(() => {
     if (!mapRef.current) return;
-    const plugin = registry[type];
-    if (!plugin) return;
+    const p = registry[type];
+    if (!p) return;
 
     // dummy origin (0,0)
     const origin = L.latLng(0, 0);
@@ -392,7 +433,7 @@ function PreviewMap({ params }: { params: Record<string, string> }) {
       mapRef.current.removeLayer(groupRef.current);
     }
 
-    const newGroup = plugin.draw(mapRef.current, origin, params, null);
+    const newGroup = p.draw(mapRef.current, origin, params, null);
     groupRef.current = newGroup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, params]); // 航线类型和参数变化都重绘
