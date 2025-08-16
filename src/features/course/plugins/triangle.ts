@@ -116,7 +116,7 @@ export const trianglePlugin: CoursePlugin<TriangleParams> = {
     // 确保上风标记坐标有效
     if (isNaN(windwardMark[0]) || isNaN(windwardMark[1])) {
       console.error('Invalid windwardMark coordinates:', windwardMark);
-      console.error('Input values:', { lat: startLineMidLat, lng: startLineMidLng, bearing: axis, distance: distanceNm * 1852 });
+      console.error('Input values:', { lat: mark3[0], lng: mark3[1], bearing: axis, distance: distanceNm * 1852 });
       return group;
     }
 

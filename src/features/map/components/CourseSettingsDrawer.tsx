@@ -194,7 +194,6 @@ function CourseSettingsForm({ draft, setDraft }: { draft: Record<string, string>
 
   const adjust = (k: string, delta: number) => {
     const cur = Number(draft[k] ?? 0);
-    const step = (plugin.paramSchema as any)[k]?.step ?? 1;
     const decimals = (plugin.paramSchema as any)[k]?.decimals;
     let val = cur + delta; // 直接使用 delta，不需要乘以 step
     if (typeof decimals === 'number') {
