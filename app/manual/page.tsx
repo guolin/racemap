@@ -714,7 +714,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
               <div>
-                <strong>Observer Mode</strong>: Receives signal boat position, views other judges' positions, assists with race supervision
+                <strong>Observer Mode</strong>: Receives signal boat position, views other judges&apos; positions, assists with race supervision
               </div>
             </div>
           </CardContent>
