@@ -3,6 +3,7 @@ import { useT } from 'src/locale';
 
 interface ObserverPos {
   id: string;
+  role?: 'admin' | 'observer';
   lat: number;
   lng: number;
   heading: number | null;
@@ -21,6 +22,13 @@ export const ObserversList: React.FC<ObserversListProps> = ({ observers, current
     () => observers.filter(o => o.id !== currentObserverId).sort((a, b) => b.ts - a.ts),
     [observers, currentObserverId]
   );
+
+  const getDisplayName = (obs: ObserverPos) => {
+    if (obs.role === 'admin' || obs.id === 'ADMIN') {
+      return t('observers.signal_boat');
+    }
+    return obs.id;
+  };
 
   if (!isVisible) return null;
 
@@ -44,10 +52,11 @@ export const ObserversList: React.FC<ObserversListProps> = ({ observers, current
           const timeDiff = Date.now() - obs.ts;
           const isRecent = timeDiff < 10_000;
           const secondsAgo = Math.round(timeDiff / 1000);
+          const displayName = getDisplayName(obs);
           return (
             <div key={obs.id} className="flex items-center gap-2 mb-1 p-2 rounded hover:bg-muted/50 transition-colors">
               <div className={`w-2 h-2 rounded-full ${isRecent ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              <span className="flex-1 text-foreground">{obs.id}</span>
+              <span className="flex-1 text-foreground">{displayName}</span>
               <span className={`text-xs ${isRecent ? 'text-green-600' : 'text-yellow-600'}`}>
                 {secondsAgo}{t('observers.seconds_ago')}
               </span>

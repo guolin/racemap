@@ -96,7 +96,7 @@ export function publishObserverPos(
   pos: ObserverPosition,
 ) {
   const c = getMqttClient();
-  if (!c || !c.connected) return;
+  if (!c || !c.connected) return false;
 
   const now = Date.now();
 
@@ -127,4 +127,5 @@ export function publishObserverPos(
     retain: true,
     properties: { messageExpiryInterval: 60 } // 统一60秒过期
   });
-} 
+  return true;
+}

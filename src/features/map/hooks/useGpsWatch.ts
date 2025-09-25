@@ -8,6 +8,7 @@ export interface GpsState {
   ok: boolean; // 最近 2.5s 是否收到定位
   accuracy: number | null; // GPS精度 (米)
   errorMsg: string | null;
+  updatedAt: number | null;
 }
 
 interface Options {
@@ -25,7 +26,15 @@ interface Options {
  * - 计算航迹方向：优先使用浏览器 heading，其次上一次坐标计算
  */
 export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdate }: Options = {}): GpsState {
-  const [state, setState] = useState<GpsState>({ latLng: null, speedKts: null, headingDeg: null, ok: false, accuracy: null, errorMsg: null });
+  const [state, setState] = useState<GpsState>({
+    latLng: null,
+    speedKts: null,
+    headingDeg: null,
+    ok: false,
+    accuracy: null,
+    errorMsg: null,
+    updatedAt: null,
+  });
 
   const lastLatLngRef = useRef<L.LatLng | null>(null);
   const lastCbTsRef = useRef(0);
@@ -79,6 +88,7 @@ export function useGpsWatch({ observerOnly = false, throttleTime = 1000, onUpdat
         ok: true,
         accuracy: accuracy || null,
         errorMsg: null,
+        updatedAt: Date.now(),
       };
       setState(newState);
       onUpdate?.(newState);

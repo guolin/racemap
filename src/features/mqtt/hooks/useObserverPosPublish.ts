@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { publishObserverPos } from '../service';
 
 interface ObserverPosition {
@@ -21,6 +21,8 @@ interface Options {
 export function useObserverPosPublish({ raceId, observerId, enabled = true, getLatestPos }: Options) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSentPosRef = useRef<ObserverPosition | null>(null);
+  const lastSentTimeRef = useRef<number>(0);
+  const [lastSentAt, setLastSentAt] = useState<number | null>(null);
 
   // 检查两个位置是否相同
   const isSamePosition = (pos1: ObserverPosition, pos2: ObserverPosition): boolean => {
@@ -39,33 +41,56 @@ export function useObserverPosPublish({ raceId, observerId, enabled = true, getL
   };
 
   useEffect(() => {
-    // 如果未启用，直接返回
-    if (!enabled) {
-      return;
-    }
-
-    // 发布函数
-    const tick = () => {
-      const pos = getLatestPos();
-      if (pos && pos.lat && pos.lng) {
-        const lastSent = lastSentPosRef.current;
-        if (lastSent && isSamePosition(pos, lastSent)) {
-          // 位置相同，不发送
-          return;
-        }
-
-        // 位置不同，发送并更新记录
-        publishObserverPos(raceId, observerId, pos);
-        lastSentPosRef.current = { ...pos };
-      }
-    };
-
-    timerRef.current = setInterval(tick, 1000);
-    return () => {
+    const clearTimer = () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
+
+    if (!enabled) {
+      clearTimer();
+      lastSentPosRef.current = null;
+      lastSentTimeRef.current = 0;
+      setLastSentAt(null);
+      return clearTimer;
+    }
+
+    const HEARTBEAT_INTERVAL_MS = 25_000;
+
+    const tick = () => {
+      const pos = getLatestPos();
+      if (!pos) return;
+
+      const { lat, lng, heading } = pos;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+      const lastSent = lastSentPosRef.current;
+      const now = Date.now();
+      const heartbeatDue = now - lastSentTimeRef.current >= HEARTBEAT_INTERVAL_MS;
+      const moved = !lastSent || !isSamePosition({ lat, lng, heading }, lastSent);
+
+      if (!moved && !heartbeatDue) return;
+
+      const normalizedHeading = typeof heading === 'number' && Number.isFinite(heading) ? heading : null;
+
+      const published = publishObserverPos(raceId, observerId, {
+        lat,
+        lng,
+        heading: normalizedHeading ?? undefined,
+      });
+
+      if (published) {
+        lastSentPosRef.current = { lat, lng, heading: normalizedHeading };
+        lastSentTimeRef.current = now;
+        setLastSentAt(now);
+      }
+    };
+
+    tick();
+    timerRef.current = setInterval(tick, 1_000);
+
+    return clearTimer;
   }, [raceId, observerId, enabled, getLatestPos]);
 
   // 页面关闭时发送空消息清理retained消息
@@ -79,4 +104,6 @@ export function useObserverPosPublish({ raceId, observerId, enabled = true, getL
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [raceId, observerId]);
+
+  return lastSentAt;
 } 

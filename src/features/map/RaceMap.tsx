@@ -15,7 +15,6 @@ import OnlineCount from './components/OnlineCount';
 import SideToolbar from '@features/map/components/SideToolbar';
 import SettingsSheet from '@features/map/components/SettingsSheet';
 import ErrorBanner from '@features/map/components/ErrorBanner';
-import { GpsPanel } from '@features/map/components/GpsPanel';
 import CompassButton from '@features/map/components/CompassButton';
 import { CoordinatesDialog } from '@features/map/components/CoordinatesDialog';
 import { useObserverPosPublish } from '@features/mqtt/hooks/useObserverPosPublish';
@@ -28,6 +27,7 @@ import { useT } from 'src/locale';
 import { useMqttClient } from '@features/mqtt/hooks';
 import { useNetworkStatus } from '@features/network/hooks/useNetworkStatus';
 import { NetworkIndicator } from './components/NetworkIndicator';
+import { GpsPanel } from '@features/map/components/GpsPanel';
 import { ObserversList } from './components/ObserversList';
 
 
@@ -182,16 +182,6 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseAxisNum]);
 
-  // tooltip state for observer panel
-  const [gpsTipVisible, setGpsTipVisible] = useState(false);
-  const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
-
-  useEffect(() => {
-    if (gps.latLng) {
-      setLastGpsInfo({ lat: gps.latLng.lat, lng: gps.latLng.lng, ts: Date.now() });
-    }
-  }, [gps.latLng]);
-
   // ---- Settings ----
   const [settingsVisible, setSettingsVisible] = useState(false);
   const closeSettings = () => {
@@ -245,7 +235,7 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   );
 
   // Observer位置发布 - Hook必须无条件调用，在内部处理isAdmin逻辑
-  useObserverPosPublish({
+  const observerHeartbeatAt = useObserverPosPublish({
     raceId: courseId,
     observerId: observerIdRef.current,
     enabled: !isAdmin, // 通过enabled参数控制是否启用
@@ -285,6 +275,16 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
   const mqttClient = useMqttClient();
   const networkStatus = useNetworkStatus(mqttClient);
 
+  // tooltip state for observer GPS panel
+  const [gpsTipVisible, setGpsTipVisible] = useState(false);
+  const [lastGpsInfo, setLastGpsInfo] = useState<{ lat: number; lng: number; ts: number } | null>(null);
+
+  useEffect(() => {
+    if (gps.latLng) {
+      setLastGpsInfo({ lat: gps.latLng.lat, lng: gps.latLng.lng, ts: Date.now() });
+    }
+  }, [gps.latLng]);
+
   // 为地图页面添加CSS识别标识
   useEffect(() => {
     document.body.classList.add('map-page');
@@ -314,13 +314,46 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
       {/* Bottom-left compact network indicator */}
       <div className="absolute left-2 bottom-2 z-[1100] pointer-events-none">
         <div className="pointer-events-auto">
-          <NetworkIndicator status={networkStatus} gpsState={gps} compact />
+          <NetworkIndicator
+            status={networkStatus}
+            gpsState={gps}
+            compact
+            observerHeartbeatAt={isAdmin ? undefined : observerHeartbeatAt}
+          />
         </div>
       </div>
+      {!isAdmin && (
+        <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>
+          <GpsPanel
+            speedKts={gps.speedKts}
+            bearingDeg={gps.headingDeg}
+            gpsOk={gps.ok}
+            onClick={() => setGpsTipVisible(v => !v)}
+            showStatusDot={false}
+          />
+          {gpsTipVisible && lastGpsInfo && (
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 10,
+                lineHeight: 1.3,
+                textAlign: 'center',
+                background: 'rgba(255,255,255,0.9)',
+                padding: '4px 6px',
+                borderRadius: 4,
+              }}
+            >
+              {new Date(lastGpsInfo.ts).toLocaleTimeString()}<br />
+              {lastGpsInfo.lat.toFixed(5)}, {lastGpsInfo.lng.toFixed(5)}
+            </div>
+          )}
+        </div>
+      )}
       {!isAdmin && (
         <ObserversList 
           observers={otherUsers.map(u => ({
             id: u.id,
+            role: u.role,
             lat: u.lat,
             lng: u.lng,
             heading: u.heading ?? null,
@@ -329,17 +362,6 @@ export default function RaceMap({ courseId, isAdmin = false }: Props) {
           currentObserverId={observerIdRef.current}
           isVisible={observersListVisible}
         />
-      )}
-      {!isAdmin && (
-        <div style={{ position: 'absolute', top: 64, left: '50%', transform: 'translateX(-50%)', zIndex: 1100 }}>
-          <GpsPanel speedKts={gps.speedKts} bearingDeg={gps.headingDeg} gpsOk={gps.ok} onClick={() => setGpsTipVisible(v=>!v)} showStatusDot={false} />
-          {gpsTipVisible && lastGpsInfo && (
-            <div style={{ marginTop: 4, fontSize: 10, lineHeight: 1.3, textAlign: 'center', background:'rgba(255,255,255,0.9)', padding:'4px 6px', borderRadius:4 }}>
-              {new Date(lastGpsInfo.ts).toLocaleTimeString()}<br />
-              {lastGpsInfo.lat.toFixed(5)}, {lastGpsInfo.lng.toFixed(5)}
-            </div>
-          )}
-        </div>
       )}
       <SideToolbar 
         isAdmin={isAdmin} 
