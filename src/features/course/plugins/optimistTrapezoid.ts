@@ -42,7 +42,7 @@ export const optimistTrapezoidPlugin: CoursePlugin<OptimistTrapezoidParams> = {
         finishMarkDistance: '终点标距离 (米)'
       },
       tooltips: {
-        origin: '信号船',
+        origin: '起航船',
         mark1: '标记1',
         mark2: '标记2',
         mark3s: '标记3S',

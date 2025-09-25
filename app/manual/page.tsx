@@ -148,13 +148,13 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
-                <strong>信号船模式 (Admin)</strong>：发布位置信息，设置赛道参数，控制比赛流程
+                <strong>起航船模式 (Admin)</strong>：发布位置信息，设置赛道参数，控制比赛流程
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
               <div>
-                <strong>观察员模式 (Observer)</strong>：接收信号船位置，查看其他裁判位置，协助比赛监督
+                <strong>观察员模式 (Observer)</strong>：接收起航船位置，查看其他裁判位置，协助比赛监督
               </div>
             </div>
           </CardContent>
@@ -175,7 +175,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
             </div>
             <div className="space-y-2">
               <h4 className="font-semibold">3. 选择角色</h4>
-              <p className="text-sm text-muted-foreground">生成房间码的设备自动成为信号船，其他设备为观察员。</p>
+              <p className="text-sm text-muted-foreground">生成房间码的设备自动成为起航船，其他设备为观察员。</p>
             </div>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
             <ul className="space-y-2 text-sm">
               <li>• <strong>实时位置同步</strong>：使用MQTT协议实现高精度GPS位置实时同步</li>
               <li>• <strong>动态赛道渲染</strong>：根据风向和比赛参数实时显示赛道布局</li>
-              <li>• <strong>多角色支持</strong>：信号船与观察员具有不同的权限和功能</li>
+              <li>• <strong>多角色支持</strong>：起航船与观察员具有不同的权限和功能</li>
               <li>• <strong>设备方向集成</strong>：支持指南针功能，地图可随设备方向旋转</li>
               <li>• <strong>PWA支持</strong>：支持离线使用，可添加到主屏幕</li>
             </ul>
@@ -201,7 +201,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
         <div>
           <h1 className="text-3xl font-bold mb-4">赛道设置</h1>
           <p className="text-muted-foreground mb-6">
-            信号船可以设置不同类型的赛道，系统支持多种标准国际赛道类型。
+            起航船可以设置不同类型的赛道，系统支持多种标准国际赛道类型。
           </p>
         </div>
 
@@ -353,7 +353,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
               <div className="space-y-2">
                 <h4 className="font-semibold">频道分配：</h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• 信号船：race/[courseId]/location/admin</li>
+                  <li>• 起航船：race/[courseId]/location/admin</li>
                   <li>• 观察员：race/[courseId]/location/observer/[observerId]</li>
                   <li>• 赛道配置：race/[courseId]/course/config</li>
                 </ul>
@@ -523,12 +523,12 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
         <div className="grid gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>信号船 (Admin) 权限</CardTitle>
+              <CardTitle>起航船 (Admin) 权限</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm">
                 <li>• <strong>赛道配置</strong>：设置和修改所有赛道参数</li>
-                <li>• <strong>位置广播</strong>：向所有观察员实时发布信号船位置</li>
+                <li>• <strong>位置广播</strong>：向所有观察员实时发布起航船位置</li>
                 <li>• <strong>比赛控制</strong>：管理比赛流程和时间节点</li>
                 <li>• <strong>系统设置</strong>：配置MQTT连接和其他系统参数</li>
               </ul>
@@ -582,7 +582,7 @@ function ManualContent({ activeSection, lang }: { activeSection: string; lang: s
           </CardHeader>
           <CardContent>
             <ol className="space-y-2 text-sm">
-              <li>1. <strong>信号船设置</strong>：配置比赛参数和赛道</li>
+              <li>1. <strong>起航船设置</strong>：配置比赛参数和赛道</li>
               <li>2. <strong>观察员加入</strong>：使用房间码加入比赛</li>
               <li>3. <strong>位置同步</strong>：所有设备开始GPS位置共享</li>
               <li>4. <strong>协同监督</strong>：各位置裁判协作进行比赛监督</li>

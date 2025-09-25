@@ -48,7 +48,7 @@ export const ioTrapezoidPlugin: CoursePlugin<IOTrapezoidParams> = {
         showMark4: '显示4标'
       },
       tooltips: {
-        origin: '信号船',
+        origin: '起航船',
         mark1: '标记1',
         mark2: '标记2',
         mark3s: '标记3S',
