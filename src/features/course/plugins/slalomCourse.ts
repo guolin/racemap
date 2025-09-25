@@ -42,7 +42,7 @@ export const slalomCoursePlugin: CoursePlugin<SlalomCourseParams> = {
         finishLineLength: '终点线长度 (米)'
       },
       tooltips: {
-        origin: '信号船',
+        origin: '起航船',
         startMark: '起航标',
         mark1: '标记1',
         mark2: '标记2',
@@ -180,7 +180,13 @@ export const slalomCoursePlugin: CoursePlugin<SlalomCourseParams> = {
       .bindTooltip(tooltips.mark3);
     const finishLeftMarker = L.marker(finishLeft as [number, number], { icon: createMarkIcon('FL') })
       .bindTooltip(tooltips.finishLeft);
-    const finishRightMarker = L.marker(finishRight as [number, number], { icon: createBoatIcon() })
+    const boatHeading = ((axis % 360) + 360) % 360;
+
+    const finishRightMarker = L.marker(finishRight as [number, number], {
+      icon: createBoatIcon(),
+      rotationAngle: boatHeading,
+      rotationOrigin: 'center center',
+    } as any)
       .bindTooltip(tooltips.finishRight);
 
     // 添加到组

@@ -177,17 +177,23 @@ export const windwardLeewardPlugin: CoursePlugin<WindwardLeewardParams> = {
 
     // 航向主线（实线）
     const courseLine = L.polyline(
-      [
-        [startLineMidLat, startLineMidLng],
-        windwardMark,
-        gateCenter,
-        [startLineMidLat, startLineMidLng],
-      ],
+      [[startLineMidLat, startLineMidLng], windwardMark],
       {
         color: '#1f77b4',
         weight: 3,
       }
     );
+
+    let returnLine: L.Polyline | null = null;
+    if (useGate && Number.isFinite(mark4DistM) && gateWidthM > 0) {
+      returnLine = L.polyline(
+        [windwardMark, gateCenter, [startLineMidLat, startLineMidLng]],
+        {
+          color: '#1f77b4',
+          weight: 3,
+        }
+      );
+    }
 
     // 1 - 1A 连线（虚线，仅在有偏移标时）
     let line1To1a: L.Polyline | null = null;
@@ -196,9 +202,13 @@ export const windwardLeewardPlugin: CoursePlugin<WindwardLeewardParams> = {
     const tooltips = windwardLeewardPlugin.i18n![lang].tooltips;
 
     // 标记
+    const boatHeading = ((axis % 360) + 360) % 360;
+
     const committeeBootMarker = L.marker(origin, {
       icon: createBoatIcon(),
-    }).bindTooltip(tooltips.committeeBoot);
+      rotationAngle: boatHeading,
+      rotationOrigin: 'center center',
+    } as any).bindTooltip(tooltips.committeeBoot);
 
     const startMarkMarker = L.marker(startMark as [number, number], {
       icon: createFlagIcon(),
@@ -256,6 +266,7 @@ export const windwardLeewardPlugin: CoursePlugin<WindwardLeewardParams> = {
     // 添加所有图层
     group.addLayer(startLine);
     group.addLayer(courseLine);
+    if (returnLine) group.addLayer(returnLine);
     group.addLayer(committeeBootMarker);
     group.addLayer(startMarkMarker);
     group.addLayer(windwardMarkMarker);
